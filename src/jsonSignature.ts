@@ -23,7 +23,12 @@ export type KeyStore = {
 export default class JsonSignature {
   private readonly _keys: KeyStore;
   private debug = false;
-  constructor(keyStore?: KeyStore, debug: boolean = false) {
+  constructor(keyStore?: KeyStore, debug = false) {
+    if (debug) {
+      console.error(
+        'Warning, Debug mode enabled, do not use in production...you may leak sensitive information!'
+      );
+    }
     this.debug = debug;
     if (keyStore) {
       this._keys = keyStore;
@@ -31,9 +36,32 @@ export default class JsonSignature {
       this._keys = new Map<string, KeyPair>();
     }
   }
+  public async exportKeyPair(key: string) : Promise<{kid: string, public: JWK, private: JWK, alg: string | undefined}> {
+    const value = this._keys.get(key);
+    if (!value?.publicKey) {
+      throw new Error('public Key not found');
+    }
+    if (!value?.privateKey) {
+      throw new Error('private Key not found');
+    }
+    const pub = await jose.exportJWK(value.publicKey);
+    const priv = await jose.exportJWK(value.privateKey);
+    return { kid: key, public: pub, private: priv, alg: value.alg };
+  }
+  public async importKeyPair(key: string, pub: JWK, priv: JWK, alg: string) : Promise<void> {
+    const pubImp = await jose.importJWK(pub, alg);
+    const privImp = await jose.importJWK(priv, alg);
+    const pair: KeyPair = {
+      publicKey: pubImp as KeyLike,
+      privateKey: privImp as KeyLike,
+      alg: alg,
+    }
+    this._keys.set(key, pair);
+
+  }
   private log(message: string, ...optionalParams: any[]) {
     if (this.debug) {
-      console.log(message);
+      console.log(message, optionalParams);
     }
   }
 
@@ -54,7 +82,7 @@ export default class JsonSignature {
   }
 
   public async generateKeyPair(
-    alg: string = 'PS256'
+    alg = 'PS256'
   ): Promise<{ key: string; publicKey: JWK }> {
     const value: GenerateKeyPairResult = await jose.generateKeyPair(alg, {
       extractable: true,
@@ -120,8 +148,12 @@ export default class JsonSignature {
         protected: signed.protected,
         signature: signed.signature,
       });
-      if (header.kid) {
+      if (!key && header.kid) {
         kid = header.kid;
+      } else {
+        if (!key) {
+          return { error: 'no key found'};
+        }
       }
     } catch (e) {
       return { error: (e as Error).message };

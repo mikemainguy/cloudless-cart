@@ -1,6 +1,6 @@
 import JsonSignature from './jsonSignature';
 
-export class CloudlessCart {
+class CloudlessCart {
   private readonly items: any[];
   private signer: JsonSignature | null = null;
 
@@ -46,3 +46,4 @@ export class CloudlessCart {
     return await this.signer.verify(cart, key);
   }
 }
+export { CloudlessCart, JsonSignature };
