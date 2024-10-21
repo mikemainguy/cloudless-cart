@@ -47,17 +47,45 @@ const verifiedCart = await cart.verifyCart(
 
 ```
 
+Signed cart will be json that looks like this:
+```json
+      {
+        signature: 'Bb28VIN1E5HdTHrtqOocy9ZZxLQjpuBq8KGFfDlqRfsJ5TOmNmmkQlgEmV5YZ1BGUvy1U2fJUVN2dTat02koE99BVJOQfNCfa2XDyyz0wWT5h66izA8jfnUrV5sywXy5t2OUKgo-ub4fXMo9GQDC7OUhQeiyy2-DGQrquwyCuTu4WOS538KayuOoBTYoB5JlRj6IZBgf12ae1BFvYXYcQTwT3U3JR6q-swi02AIU2t2H5DjZgUetCedZC0ObcPl7v6VGP2RPHMCmPK17puz8hEnQU1TP1hCFP6aiSPeZ7uqkwjDpRw1mQIW3a-bowMkthUl8610Yb18Z0f70IQ2Bgg',
+        protected: 'eyJhbGciOiJQUzI1NiIsImtpZCI6ImYxZmM2YzZlLWU0NGUtNDUzMS1hNGY1LWM2N2ZiNWQzYTRjYyIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19',
+        payload: { id: 1, message: 'hello' }
+      }
+
+```
+
+public key will be JWK that looks like this:
+
+```json
+      {
+        signature: 'Bb28VIN1E5HdTHrtqOocy9ZZxLQjpuBq8KGFfDlqRfsJ5TOmNmmkQlgEmV5YZ1BGUvy1U2fJUVN2dTat02koE99BVJOQfNCfa2XDyyz0wWT5h66izA8jfnUrV5sywXy5t2OUKgo-ub4fXMo9GQDC7OUhQeiyy2-DGQrquwyCuTu4WOS538KayuOoBTYoB5JlRj6IZBgf12ae1BFvYXYcQTwT3U3JR6q-swi02AIU2t2H5DjZgUetCedZC0ObcPl7v6VGP2RPHMCmPK17puz8hEnQU1TP1hCFP6aiSPeZ7uqkwjDpRw1mQIW3a-bowMkthUl8610Yb18Z0f70IQ2Bgg',
+        protected: 'eyJhbGciOiJQUzI1NiIsImtpZCI6ImYxZmM2YzZlLWU0NGUtNDUzMS1hNGY1LWM2N2ZiNWQzYTRjYyIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19',
+        payload: { id: 1, message: 'hello' }
+      }
+```
+
+In the example, we overrode the default generated kid with 'testtest',
+alternatively you can not set any kid and import the public key with the kid in
+the JWS header and it will work fine.
+
 ## Exporting and Importing a keypair
 
 ```typescript
 //create new keypair, export, and store somewhere secure
-import { JsonSignature } from 'cloudless-cart';
 const composer = new JsonSignature();
 const keypair = await composer.generateKeyPair();
-const pair = await composer.exportKeyPair(keypair.key);
+//export the public key so folks verifying can use it
+const pubKey = await composer.getPublicKey(keypair.key);
+const message = { message: 'hello', id: 1 };
+const signed = await composer.sign(keypair.key, message);
 
-//import the keypair on another machine, process/whatever
+//import the public key and verify the message (in browser, another system, whatever)
 const composer2 = new JsonSignature();
-await composer2.importKeyPair(keypair.key, pair.public, pair.private, pair.alg as string);
+await composer2.setPublicKey('testtest', pubKey);
+const verified = await composer2.verify(signed, 'testtest');
+expect(verified).toEqual(message);
 ```
 

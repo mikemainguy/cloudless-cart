@@ -38,11 +38,8 @@ export default class JsonSignature {
   }
   public async exportKeyPair(key: string) : Promise<{kid: string, public: JWK, private: JWK, alg: string | undefined}> {
     const value = this._keys.get(key);
-    if (!value?.publicKey) {
-      throw new Error('public Key not found');
-    }
-    if (!value?.privateKey) {
-      throw new Error('private Key not found');
+    if (!value?.publicKey || !value?.privateKey) {
+      throw new Error('Not a valid key pair');
     }
     const pub = await jose.exportJWK(value.publicKey);
     const priv = await jose.exportJWK(value.privateKey);
@@ -65,12 +62,13 @@ export default class JsonSignature {
     }
   }
 
-  setPrivateKey(key: string, value: KeyLike) {
-    this._keys.set(key, { privateKey: value });
+  async setPrivateKey(key: string, value: JWK) {
+    const privKey = await jose.importJWK(value);
+    this._keys.set(key, { privateKey: privKey as KeyLike });
   }
-
-  setPublicKey(key: string, value: KeyLike) {
-    this._keys.set(key, { publicKey: value });
+  async setPublicKey(key: string, value: JWK) {
+    const pubKey = await jose.importJWK(value);
+    this._keys.set(key, { publicKey: pubKey as KeyLike });
   }
 
   public async getPublicKey(key: string): Promise<JWK> {

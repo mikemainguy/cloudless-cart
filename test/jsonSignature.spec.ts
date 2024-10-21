@@ -1,4 +1,4 @@
-import JsonSignature from '../src/jsonSignature';
+import JsonSignature, { KeyPair, KeyStore } from '../src/jsonSignature';
 
 void describe('json signature', () => {
   describe('debug mode', () => {
@@ -20,11 +20,10 @@ void describe('json signature', () => {
     });
   });
   describe('core operations', () => {
-    void it('should generate keystore if not supplied', () => {
+    void it('should accept keystore if supplied', () => {
       const composer = new JsonSignature();
       expect(composer).toBeDefined();
     });
-
     void it('should generate keystore if not supplied', async () => {
       const composer = new JsonSignature();
       const keypair = await composer.generateKeyPair();
@@ -44,6 +43,15 @@ void describe('json signature', () => {
     });
   });
   describe('key store operations', () => {
+    void it('should be able to be created with default keystore', async() => {
+      const keys = new Map<string, KeyPair>();
+      expect(keys.size).toEqual(0);
+      const composer = new JsonSignature(keys as KeyStore);
+      expect(composer).toBeDefined();
+      const keypair = await composer.generateKeyPair();
+      expect(keys.size).toEqual(1);
+      expect(keys.get(keypair.key)).toBeDefined();
+    });
     void it('should set and get a key pair', async () => {
       const composer = new JsonSignature();
       const keypair = await composer.generateKeyPair();
@@ -55,10 +63,9 @@ void describe('json signature', () => {
       const keypair = await composer.generateKeyPair();
       const message = { message: 'hello', id: 1 };
       const signed = await composer.sign(keypair.key, message);
-      const pair = await composer.exportKeyPair(keypair.key);
+      const pubKey = await composer.getPublicKey(keypair.key);
       const composer2 = new JsonSignature();
-      expect(pair.alg).toBeDefined();
-      await composer2.importKeyPair('testtest', pair.public, pair.private, pair.alg as string);
+      await composer2.setPublicKey('testtest', pubKey);
       const verified = await composer2.verify(signed, 'testtest');
       expect(verified).toEqual(message);
     });
