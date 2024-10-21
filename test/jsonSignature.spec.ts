@@ -1,6 +1,5 @@
 import JsonSignature from '../src/jsonSignature';
 
-
 void describe('json signature', () => {
   void it('should generate keystore if not supplied', async () => {
     const composer = new JsonSignature();

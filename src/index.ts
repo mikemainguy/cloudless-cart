@@ -8,7 +8,7 @@ export class CloudlessCart {
     this.items = [];
   }
 
-  public addItem(item: any) {
+  public addItem(item: any): void {
     this.items.push(item);
   }
 
@@ -16,11 +16,11 @@ export class CloudlessCart {
     return this.items;
   }
 
-  public clearCart() {
+  public clearCart(): void {
     this.items.length = 0;
   }
 
-  public setSigner(signer: JsonSignature) {
+  public setSigner(signer: JsonSignature): void {
     this.signer = signer;
   }
 
