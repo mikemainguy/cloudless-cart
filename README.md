@@ -5,8 +5,8 @@ sign them, and verify the signature.
 
 Uses the `cryptography` library to sign and verify the items.
 ## Intent
-many only shopping experiences rely on a centralized
-"cart" databse to store and retrieve data.  This library allows for passing a cart
+many online shopping experiences rely on a centralized
+"cart" database to store and retrieve data.  This library allows for passing a cart
 around to different services without having to worry about the
 backend state of the cart.  This is useful to decouple systems in a 
 microservices ecosystem.
@@ -68,7 +68,7 @@ public key will be JWK that looks like this:
 ```
 
 In the example, we overrode the default generated kid with 'testtest',
-alternatively you can not set any kid and import the public key with the kid in
+you can also not set any kid and import the public key with the kid in
 the JWS header and it will work fine.
 
 ## Exporting and Importing a keypair

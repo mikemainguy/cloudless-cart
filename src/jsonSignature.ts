@@ -36,14 +36,14 @@ export default class JsonSignature {
       this._keys = new Map<string, KeyPair>();
     }
   }
-  public async exportKeyPair(key: string) : Promise<{kid: string, public: JWK, private: JWK, alg: string | undefined}> {
+  public async exportKeyPair(key: string) : Promise<{kid: string, publicKey: JWK, privateKey: JWK, alg: string | undefined}> {
     const value = this._keys.get(key);
     if (!value?.publicKey || !value?.privateKey) {
       throw new Error('Not a valid key pair');
     }
-    const pub = await jose.exportJWK(value.publicKey);
-    const priv = await jose.exportJWK(value.privateKey);
-    return { kid: key, public: pub, private: priv, alg: value.alg };
+    const pub: JWK = await jose.exportJWK(value.publicKey);
+    const priv: JWK = await jose.exportJWK(value.privateKey);
+    return { kid: key, publicKey: pub, privateKey: priv, alg: value.alg };
   }
   public async importKeyPair(key: string, pub: JWK, priv: JWK, alg: string) : Promise<void> {
     const pubImp = await jose.importJWK(pub, alg);
@@ -72,7 +72,7 @@ export default class JsonSignature {
   }
 
   public async getPublicKey(key: string): Promise<JWK> {
-    const value = this._keys.get(key);
+    const value: KeyPair | undefined = this._keys.get(key);
     if (!value?.publicKey) {
       throw new Error('Key not found');
     }
