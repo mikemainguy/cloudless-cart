@@ -192,4 +192,8 @@ export default class JsonSignature {
       return { error: (e as Error).message };
     }
   }
+
+  public hasKey(keyId: string): boolean {
+    return this._keys.get(keyId) !== undefined;
+  }
 }

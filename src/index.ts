@@ -47,3 +47,5 @@ class CloudlessCart {
   }
 }
 export { CloudlessCart, JsonSignature };
+export { default as TokenCrypto } from './tokenCrypto';
+export { default as CloudlessCrypto } from './cloudlessCrypto';

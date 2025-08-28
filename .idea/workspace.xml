@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ebae9615-8dcb-4e10-93ad-906d1ab72300" name="Changes" comment="updated docs to include public private key info" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="2nkaXW4q7Fbt6scGPtqG0KDgxe5" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "JavaScript Debug.index.html.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/michaelmainguy/WebstormProjects/cloudless-cart",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_interpreter_path": "/Users/michaelmainguy/.nvm/versions/node/v22.9.0/bin/node",
+    "nodejs_package_manager_path": "npm",
+    "npm.test:watch.executor": "Run",
+    "prettierjs.PrettierConfiguration.Package": "/Users/michaelmainguy/WebstormProjects/cloudless-cart/node_modules/prettier",
+    "settings.editor.selected.configurable": "settings.nodejs",
+    "ts.external.directory.path": "/Users/michaelmainguy/Applications/WebStorm.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "GitStage.ChangesTree.GroupingKeys": [
+      "directory",
+      "module",
+      "repository"
+    ]
+  }
+}]]></component>
+  <component name="RunManager" selected="npm.test:watch">
+    <configuration name="index.html" type="JavascriptDebugType" temporary="true" nameIsGenerated="true" uri="http://localhost:63342/cloudless-cart/coverage/lcov-report/index.html" useBuiltInWebServerPort="true">
+      <method v="2" />
+    </configuration>
+    <configuration name="test:watch" type="js.build_tools.npm" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="test:watch" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="JavaScript Debug.index.html" />
+      <item itemvalue="npm.test:watch" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JavaScript Debug.index.html" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-WS-243.23654.157" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ebae9615-8dcb-4e10-93ad-906d1ab72300" name="Changes" comment="" />
+      <created>1729519567541</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1729519567541</updated>
+      <workItem from="1729519568588" duration="12737000" />
+      <workItem from="1729535105965" duration="4806000" />
+      <workItem from="1729721950900" duration="2924000" />
+      <workItem from="1730028494960" duration="17275000" />
+      <workItem from="1730199445466" duration="16897000" />
+      <workItem from="1731246041083" duration="15000" />
+      <workItem from="1731413427162" duration="606000" />
+      <workItem from="1736867360805" duration="16019000" />
+      <workItem from="1737077516403" duration="5851000" />
+      <workItem from="1756419257138" duration="233000" />
+    </task>
+    <task id="LOCAL-00001" summary="Initial Commit">
+      <option name="closed" value="true" />
+      <created>1729523601393</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1729523601393</updated>
+    </task>
+    <task id="LOCAL-00002" summary="fix lint errors">
+      <option name="closed" value="true" />
+      <created>1729523695636</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1729523695636</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Added ability to import/export keys.">
+      <option name="closed" value="true" />
+      <created>1729530293507</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1729530293507</updated>
+    </task>
+    <task id="LOCAL-00004" summary="updated README.md">
+      <option name="closed" value="true" />
+      <created>1729531227847</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1729531227847</updated>
+    </task>
+    <task id="LOCAL-00005" summary="updated docs to include public private key info">
+      <option name="closed" value="true" />
+      <created>1729536038046</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1729536038046</updated>
+    </task>
+    <task id="LOCAL-00006" summary="updated docs to include public private key info">
+      <option name="closed" value="true" />
+      <created>1729541118239</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1729541118239</updated>
+    </task>
+    <task id="LOCAL-00007" summary="updated docs to include public private key info">
+      <option name="closed" value="true" />
+      <created>1736867818106</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1736867818106</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial Commit" />
+    <MESSAGE value="fix lint errors" />
+    <MESSAGE value="Added ability to import/export keys." />
+    <MESSAGE value="updated README.md" />
+    <MESSAGE value="updated docs to include public private key info" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated docs to include public private key info" />
+  </component>
+</project>
