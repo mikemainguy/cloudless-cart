@@ -33,80 +33,79 @@ This performance report analyzes the encryption, signing, compression, and timin
 
 | Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
 |------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 1.93ms | 0.49ms | **2.42ms** | 769B | +185.9% | ❌ |
-| Encrypt-Then-Sign | 2.49ms | 1.65ms | **4.14ms** | 1.6KB | +492.6% | ❌ |
-| Encrypt-Then-Sign+Compress | 6.13ms | 1.26ms | **7.38ms** | 1.6KB | +514.9% | ✅ |
-| Sign-Then-Encrypt | 0.71ms | 0.74ms | **1.45ms** | 1.6KB | +504.5% | ❌ |
-| Sign-Then-Encrypt+Compress | 2.13ms | 1.10ms | **3.23ms** | 1.7KB | +552.4% | ✅ |
+| Sign-Only | 1.87ms | 0.47ms | **2.33ms** | 769B | +185.9% | ❌ |
+| Encrypt-Then-Sign | 2.22ms | 2.28ms | **4.50ms** | 1.6KB | +492.6% | ❌ |
+| Encrypt-Then-Sign+Compress | 8.64ms | 1.25ms | **9.88ms** | 1.6KB | +507.1% | ✅ |
+| Sign-Then-Encrypt | 0.73ms | 0.77ms | **1.49ms** | 1.6KB | +504.5% | ❌ |
+| Sign-Then-Encrypt+Compress | 2.76ms | 1.11ms | **3.87ms** | 1.7KB | +538.7% | ✅ |
 
 #### Analysis for 100B
 
-- **Fastest Option**: Sign-Only (2.42ms total)
-- **Fastest Encrypted**: Sign-Then-Encrypt (1.45ms total)
+- **Fastest Option**: Sign-Only (2.33ms total)
+- **Fastest Encrypted**: Sign-Then-Encrypt (1.49ms total)
 - **Smallest Token**: Sign-Only (769B)
-- **Average Compression**: 533.6% size reduction
+- **Average Compression**: 522.9% size reduction
 
 
-### 1KB Payload (924B actual)
+### 1KB Payload (927B actual)
 
 | Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
 |------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 0.61ms | 0.16ms | **0.78ms** | 1.4KB | +54.1% | ❌ |
-| Encrypt-Then-Sign | 0.83ms | 0.69ms | **1.52ms** | 2.4KB | +167.1% | ❌ |
-| Encrypt-Then-Sign+Compress | 2.32ms | 1.07ms | **3.39ms** | 2.1KB | +131.6% | ✅ |
-| Sign-Then-Encrypt | 0.81ms | 0.88ms | **1.68ms** | 2.4KB | +170.5% | ❌ |
-| Sign-Then-Encrypt+Compress | 1.76ms | 1.16ms | **2.92ms** | 2.2KB | +144.4% | ✅ |
+| Sign-Only | 0.70ms | 0.12ms | **0.82ms** | 1.4KB | +53.9% | ❌ |
+| Encrypt-Then-Sign | 0.83ms | 0.76ms | **1.59ms** | 2.4KB | +166.7% | ❌ |
+| Encrypt-Then-Sign+Compress | 2.85ms | 1.15ms | **4.00ms** | 2.0KB | +119.3% | ✅ |
+| Sign-Then-Encrypt | 0.79ms | 0.90ms | **1.69ms** | 2.4KB | +170.0% | ❌ |
+| Sign-Then-Encrypt+Compress | 2.57ms | 1.27ms | **3.84ms** | 2.1KB | +131.5% | ✅ |
 
 #### Analysis for 1KB
 
-- **Fastest Option**: Sign-Only (0.78ms total)
+- **Fastest Option**: Sign-Only (0.82ms total)
 - **Smallest Token**: Sign-Only (1.4KB)
-- **Average Compression**: 138.0% size reduction
+- **Average Compression**: 125.4% size reduction
 
 
 ### 10KB Payload (9.0KB actual)
 
 | Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
 |------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 0.85ms | 0.34ms | **1.19ms** | 9.5KB | +5.4% | ❌ |
-| Encrypt-Then-Sign | 1.32ms | 1.26ms | **2.57ms** | 13.2KB | +46.8% | ❌ |
-| Encrypt-Then-Sign+Compress | 4.05ms | 1.72ms | **5.77ms** | 3.5KB | -60.8% | ✅ |
-| Sign-Then-Encrypt | 0.93ms | 0.92ms | **1.85ms** | 13.2KB | +47.1% | ❌ |
-| Sign-Then-Encrypt+Compress | 3.53ms | 1.70ms | **5.23ms** | 3.8KB | -57.9% | ✅ |
+| Sign-Only | 0.88ms | 0.35ms | **1.22ms** | 9.5KB | +5.4% | ❌ |
+| Encrypt-Then-Sign | 1.35ms | 1.30ms | **2.65ms** | 13.2KB | +46.8% | ❌ |
+| Encrypt-Then-Sign+Compress | 5.63ms | 1.92ms | **7.54ms** | 3.3KB | -63.3% | ✅ |
+| Sign-Then-Encrypt | 0.97ms | 0.95ms | **1.92ms** | 13.2KB | +47.1% | ❌ |
+| Sign-Then-Encrypt+Compress | 4.90ms | 1.70ms | **6.61ms** | 3.4KB | -62.1% | ✅ |
 
 #### Analysis for 10KB
 
-- **Fastest Option**: Sign-Only (1.19ms total)
-- **Smallest Token**: Encrypt-Then-Sign+Compress (3.5KB)
-- **Average Compression**: 59.3% size reduction
+- **Fastest Option**: Sign-Only (1.22ms total)
+- **Smallest Token**: Encrypt-Then-Sign+Compress (3.3KB)
+- **Average Compression**: 62.7% size reduction
 
 
-### 100KB Payload (87.9KB actual)
+### 100KB Payload (88.9KB actual)
 
 | Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
 |------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 1.52ms | 2.25ms | **3.77ms** | 88.4KB | +0.6% | ❌ |
-| Encrypt-Then-Sign | 2.08ms | 2.16ms | **4.24ms** | 118.4KB | +34.7% | ❌ |
-| Encrypt-Then-Sign+Compress | 17.66ms | 4.69ms | **22.35ms** | 7.3KB | -91.7% | ✅ |
-| Sign-Then-Encrypt | 1.78ms | 1.77ms | **3.55ms** | 118.4KB | +34.7% | ❌ |
-| Sign-Then-Encrypt+Compress | 15.68ms | 2.67ms | **18.36ms** | 7.9KB | -91.0% | ✅ |
+| Sign-Only | 2.13ms | 1.15ms | **3.28ms** | 89.4KB | +0.5% | ❌ |
+| Encrypt-Then-Sign | 2.34ms | 2.38ms | **4.72ms** | 119.8KB | +34.7% | ❌ |
+| Encrypt-Then-Sign+Compress | 24.01ms | 2.12ms | **26.12ms** | 6.7KB | -92.5% | ✅ |
+| Sign-Then-Encrypt | 1.80ms | 1.80ms | **3.60ms** | 119.8KB | +34.7% | ❌ |
+| Sign-Then-Encrypt+Compress | 10.73ms | 2.39ms | **13.12ms** | 6.7KB | -92.5% | ✅ |
 
 #### Analysis for 100KB
 
-- **Fastest Option**: Sign-Only (3.77ms total)
-- **Fastest Encrypted**: Sign-Then-Encrypt (3.55ms total)
-- **Smallest Token**: Encrypt-Then-Sign+Compress (7.3KB)
-- **Average Compression**: 91.3% size reduction
+- **Fastest Option**: Sign-Only (3.28ms total)
+- **Smallest Token**: Encrypt-Then-Sign+Compress (6.7KB)
+- **Average Compression**: 92.5% size reduction
 
 
 ## Compression Analysis
 
 | Payload Size | Original | Compressed | Uncompressed | Compression Ratio | CPU Overhead |
 |-------------|----------|------------|--------------|-------------------|--------------|
-| 100B | 269B | 1.7KB | 1.6KB | **-5.9%** | +2.5ms |
-| 1KB | 924B | 2.1KB | 2.4KB | **11.5%** | +1.2ms |
-| 10KB | 9.0KB | 3.6KB | 13.2KB | **72.3%** | +2.7ms |
-| 100KB | 87.9KB | 7.6KB | 118.4KB | **93.6%** | +14.7ms |
+| 100B | 269B | 1.6KB | 1.6KB | **-4.1%** | +4.2ms |
+| 1KB | 927B | 2.0KB | 2.4KB | **16.0%** | +1.9ms |
+| 10KB | 9.0KB | 3.3KB | 13.2KB | **74.6%** | +4.1ms |
+| 100KB | 88.9KB | 6.7KB | 119.8KB | **94.4%** | +15.3ms |
 
 ### Compression ROI Analysis
 

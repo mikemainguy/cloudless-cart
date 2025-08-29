@@ -113,8 +113,8 @@ export default class TokenCrypto {
         const payloadBuffer = Buffer.from(payloadString, 'utf8');
         const compressOptions = {
           mode: 1 as const, // 1 = text mode for JSON data
-          quality: 11 as const, // Maximum compression quality
-          lgwin: 22 as const, // Default window size
+          quality: 5 as const, // Maximum compression quality
+          lgwin: 20 as const, // Default window size
         };
         const compressed = brotli.compress(payloadBuffer, compressOptions);
         
