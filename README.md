@@ -529,27 +529,261 @@ console.log('✅ Cart verified for payment:', verifiedCart);
 // - Never shares private keys with other services
 ```
 
+### Encryption Public Key Distribution
+
+While signing verification only needs the public key, **encryption requires distributing the public encryption key** so other services can encrypt data for a specific service.
+
+```typescript
+// === PAYMENT SERVICE: Needs to encrypt data for Cart Service ===
+const paymentService = new CloudlessCrypto();
+
+// Payment service gets Cart Service's PUBLIC encryption key
+const cartServiceEncryptionPublicKey = await getPublicKeyFromRegistry('cart-service-encryption');
+
+// Payment service imports the public key for encryption
+await paymentService.encryptor.importKeyPairForEncryption(
+  'cart-service-encryption',
+  cartServiceEncryptionPublicKey,
+  null, // No private key - can't decrypt!
+  'RSA-OAEP-256'
+);
+
+// Now payment service can encrypt data FOR cart service
+const sensitivePaymentData = {
+  transactionId: 'txn-12345',
+  creditCardToken: 'tok_1234567890',
+  billingAddress: '123 Main St, City, State',
+  amount: 99.99
+};
+
+// Encrypt data so ONLY cart service can decrypt it
+const encryptedForCartService = await paymentService.encryptToken(
+  'cart-service-encryption',
+  sensitivePaymentData,
+  { audience: 'cart-service', expirationTime: '1h' }
+);
+
+console.log('Encrypted payment data for cart service:', encryptedForCartService);
+
+// === CART SERVICE: Can decrypt data encrypted for it ===
+const cartService = new CloudlessCrypto();
+// Cart service has both public AND private encryption keys
+
+// Cart service can decrypt data encrypted for it
+const decryptedPaymentData = await cartService.decryptToken(
+  cartService.encryptionKeyId, // Has private key
+  encryptedForCartService
+);
+
+console.log('Decrypted payment data:', decryptedPaymentData);
+```
+
+### Complete Multi-Service Example with Both Key Types
+
+```typescript
+// === COMPREHENSIVE MICROSERVICES SETUP ===
+
+// Service A: User Service
+const userService = new CloudlessCrypto();
+const userSigningKeys = await userService.generateSigningKeyPair();
+const userEncryptionKeys = await userService.generateEncryptionKeyPair();
+
+// Service B: Cart Service  
+const cartService = new CloudlessCrypto();
+const cartSigningKeys = await cartService.generateSigningKeyPair();
+const cartEncryptionKeys = await cartService.generateEncryptionKeyPair();
+
+// Service C: Payment Service
+const paymentService = new CloudlessCrypto();
+const paymentSigningKeys = await paymentService.generateSigningKeyPair();
+const paymentEncryptionKeys = await paymentService.generateEncryptionKeyPair();
+
+// === PUBLIC KEY DISTRIBUTION ===
+const publicKeyRegistry = {
+  // Signing public keys (for verification)
+  'user-service-signing': userSigningKeys.publicKey,
+  'cart-service-signing': cartSigningKeys.publicKey,
+  'payment-service-signing': paymentSigningKeys.publicKey,
+  
+  // Encryption public keys (for encrypting data TO that service)
+  'user-service-encryption': userEncryptionKeys.publicKey,
+  'cart-service-encryption': cartEncryptionKeys.publicKey,
+  'payment-service-encryption': paymentEncryptionKeys.publicKey
+};
+
+// === CART SERVICE SETUP ===
+// Cart service can verify user tokens (needs user's signing public key)
+await cartService.signer.setPublicKey(
+  'user-service-signing', 
+  publicKeyRegistry['user-service-signing']
+);
+
+// Cart service can encrypt data for payment service (needs payment's encryption public key)
+await cartService.encryptor.importKeyPairForEncryption(
+  'payment-service-encryption',
+  publicKeyRegistry['payment-service-encryption'],
+  null, // No private key
+  'RSA-OAEP-256'
+);
+
+// === PAYMENT SERVICE SETUP ===
+// Payment service can verify cart tokens (needs cart's signing public key)
+await paymentService.signer.setPublicKey(
+  'cart-service-signing',
+  publicKeyRegistry['cart-service-signing']
+);
+
+// Payment service can encrypt data for cart service (needs cart's encryption public key)
+await paymentService.encryptor.importKeyPairForEncryption(
+  'cart-service-encryption',
+  publicKeyRegistry['cart-service-encryption'], 
+  null, // No private key
+  'RSA-OAEP-256'
+);
+
+// === REAL-WORLD FLOW ===
+
+// 1. User creates token
+const userToken = await userService.signObject(userSigningKeys.key, {
+  userId: 'user123',
+  permissions: ['create-cart'],
+  expires: Date.now() + 3600000
+});
+
+// 2. Cart service verifies user token
+const verifiedUser = await cartService.verifyObject(userToken, 'user-service-signing');
+console.log('✅ User verified:', verifiedUser.userId);
+
+// 3. Cart service creates cart and encrypts it for payment service
+const cartData = {
+  cartId: 'cart-456',
+  userId: verifiedUser.userId,
+  items: [{ name: 'Premium Item', price: 199.99 }],
+  total: 199.99
+};
+
+const encryptedCartForPayment = await cartService.encryptToken(
+  'payment-service-encryption', // Payment service can decrypt this
+  cartData,
+  { audience: 'payment-service' }
+);
+
+// 4. Payment service receives encrypted cart and can decrypt it
+const decryptedCart = await paymentService.decryptToken(
+  paymentEncryptionKeys.key, // Payment service's private key
+  encryptedCartForPayment
+);
+
+console.log('✅ Payment service decrypted cart:', decryptedCart);
+
+// 5. Payment service encrypts receipt for cart service
+const paymentReceipt = {
+  transactionId: 'txn-789',
+  cartId: decryptedCart.cartId,
+  status: 'completed',
+  amount: decryptedCart.total
+};
+
+const encryptedReceiptForCart = await paymentService.encryptToken(
+  'cart-service-encryption', // Cart service can decrypt this
+  paymentReceipt,
+  { audience: 'cart-service' }
+);
+
+// 6. Cart service decrypts receipt
+const decryptedReceipt = await cartService.decryptToken(
+  cartEncryptionKeys.key, // Cart service's private key
+  encryptedReceiptForCart
+);
+
+console.log('✅ Cart service received receipt:', decryptedReceipt);
+```
+
+### Public Key Registry Pattern for Encryption Keys
+
+```typescript
+class CryptoKeyRegistry {
+  private signingKeys = new Map<string, any>();
+  private encryptionKeys = new Map<string, any>();
+  
+  // Register keys when services start up
+  async registerServiceKeys(serviceId: string, keys: {
+    signingPublic: any,
+    encryptionPublic: any
+  }) {
+    this.signingKeys.set(`${serviceId}-signing`, keys.signingPublic);
+    this.encryptionKeys.set(`${serviceId}-encryption`, keys.encryptionPublic);
+    console.log(`✅ Registered keys for ${serviceId}`);
+  }
+  
+  // Get signing public key (for verifying tokens from that service)
+  async getSigningPublicKey(serviceId: string) {
+    return this.signingKeys.get(`${serviceId}-signing`);
+  }
+  
+  // Get encryption public key (for encrypting data TO that service)
+  async getEncryptionPublicKey(serviceId: string) {
+    return this.encryptionKeys.get(`${serviceId}-encryption`);
+  }
+}
+
+// Usage in service initialization
+const keyRegistry = new CryptoKeyRegistry();
+
+// Each service registers its public keys
+await keyRegistry.registerServiceKeys('user-service', {
+  signingPublic: userSigningKeys.publicKey,
+  encryptionPublic: userEncryptionKeys.publicKey
+});
+
+await keyRegistry.registerServiceKeys('cart-service', {
+  signingPublic: cartSigningKeys.publicKey, 
+  encryptionPublic: cartEncryptionKeys.publicKey
+});
+
+// Services fetch keys they need
+const cartSigningPubKey = await keyRegistry.getSigningPublicKey('cart-service');
+const cartEncryptionPubKey = await keyRegistry.getEncryptionPublicKey('cart-service');
+
+// Payment service can now:
+// 1. Verify tokens signed BY cart service (using cart's signing public key)
+// 2. Encrypt data FOR cart service (using cart's encryption public key)
+```
+
 ### Security Benefits of Public Key Verification
 
 1. **🔒 Private Key Isolation**
-   - Private keys never leave the signing service
-   - Compromise of verification service doesn't expose signing capability
+   - Private keys never leave the owning service
+   - Compromise of one service doesn't expose other services' signing/decryption capability
    - Each service only has the minimum keys needed
 
 2. **📈 Scalable Architecture**
-   - Multiple services can verify without coordination
+   - Multiple services can verify/encrypt without coordination
    - No need to share sensitive key material
-   - Easy to add new verification services
+   - Easy to add new services to the ecosystem
 
 3. **🛡️ Defense in Depth**
-   - Even if verification service is compromised, attacker cannot forge signatures
+   - Even if a service is compromised, attacker cannot forge signatures for other services
+   - Cannot decrypt data intended for other services
    - Public key distribution can be monitored and audited
-   - Key rotation affects only the signing service
 
 4. **⚡ Performance Benefits**
-   - Verification services don't need secure key storage
+   - Services don't need secure storage for other services' private keys
    - Public keys can be cached and distributed via CDN
    - No secure communication needed for public key sharing
+
+### Key Distribution Security Considerations
+
+```typescript
+// Security checklist for public key distribution
+const securityConsiderations = {
+  integrity: "✅ Public keys should be signed by trusted CA or verified via secure channel",
+  authenticity: "✅ Verify public key fingerprints out-of-band",
+  freshness: "✅ Monitor for key rotation and update public keys promptly",
+  revocation: "✅ Have mechanism to revoke compromised public keys",
+  storage: "✅ Public keys don't need secure storage but should be backed up"
+};
+```
 
 ## Security Best Practices
 
