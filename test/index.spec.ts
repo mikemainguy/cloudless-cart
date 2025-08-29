@@ -3,9 +3,9 @@ import { CloudlessCart, JsonSignature } from '../src';
 void describe('index', () => {
   void it('adding a single string should return a single item array', () => {
     const cart = new CloudlessCart();
-    cart.addItem('item');
+    cart.addItem({ name: 'item', price: 10 });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    expect(cart.getItems()).toEqual(['item']);
+    expect(cart.getItems()).toEqual([{ name: 'item', price: 10 }]);
   });
   void it('adding a single object should return a single item array', () => {
     const cart = new CloudlessCart();
@@ -68,6 +68,7 @@ void describe('index', () => {
     const signed = {
       signature: 'signature',
       protected: 'protected',
+      payload: {},
     };
     await expect(cart.verifyCart(signed, 'foo')).rejects.toThrow(
       'No signer set'

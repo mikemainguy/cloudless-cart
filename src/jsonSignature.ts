@@ -7,7 +7,7 @@ const iterations = 1;
 export type SignedObject = {
   signature: string;
   protected: string | undefined;
-  payload: object;
+  payload: Record<string, unknown>;
 };
 
 export type KeyPair = {
@@ -71,11 +71,11 @@ export default class JsonSignature {
     }
   }
 
-  async setPrivateKey(key: string, value: JWK) {
+  async setPrivateKey(key: string, value: JWK): Promise<void> {
     const privKey = await jose.importJWK(value);
     this._keys.set(key, { privateKey: privKey as KeyLike });
   }
-  async setPublicKey(key: string, value: JWK) {
+  async setPublicKey(key: string, value: JWK): Promise<void> {
     const pubKey = await jose.importJWK(value);
     this._keys.set(key, { publicKey: pubKey as KeyLike });
   }
@@ -104,7 +104,10 @@ export default class JsonSignature {
     return { key, publicKey: pubKey };
   }
 
-  public async sign(key: string, obj: object): Promise<SignedObject> {
+  public async sign(
+    key: string,
+    obj: Record<string, unknown>
+  ): Promise<SignedObject> {
     const value = this._keys.get(key);
 
     if (!value?.privateKey) {
@@ -136,7 +139,10 @@ export default class JsonSignature {
     };
   }
 
-  public async verify(signed: SignedObject, key?: string): Promise<object> {
+  public async verify(
+    signed: SignedObject,
+    key?: string
+  ): Promise<Record<string, unknown>> {
     let v = {};
     const start = performance.now();
     this.log('start: ', start);
@@ -145,10 +151,13 @@ export default class JsonSignature {
     }
     this.log('Time taken: ', performance.now() - start);
     this.log('Time taken: ', (performance.now() - start) / iterations);
-    return v;
+    return v as Record<string, unknown>;
   }
 
-  private async _verify(signed: SignedObject, key?: string): Promise<object> {
+  private async _verify(
+    signed: SignedObject,
+    key?: string
+  ): Promise<Record<string, unknown>> {
     let kid = key;
     try {
       const header = jose.decodeProtectedHeader({
@@ -187,7 +196,10 @@ export default class JsonSignature {
         rsaPublicKey,
         options
       );
-      return JSON.parse(new TextDecoder().decode(payload));
+      return JSON.parse(new TextDecoder().decode(payload)) as Record<
+        string,
+        unknown
+      >;
     } catch (e) {
       return { error: (e as Error).message };
     }

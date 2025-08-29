@@ -1,4 +1,4 @@
-import JsonSignature from './jsonSignature';
+import JsonSignature, { SignedObject } from './jsonSignature';
 
 class CloudlessCart {
   private readonly items: any[];
@@ -8,7 +8,7 @@ class CloudlessCart {
     this.items = [];
   }
 
-  public addItem(item: any): void {
+  public addItem(item: Record<string, unknown>): void {
     this.items.push(item);
   }
 
@@ -39,7 +39,10 @@ class CloudlessCart {
     };
   }
 
-  public async verifyCart(cart: any, key: string): Promise<any> {
+  public async verifyCart(
+    cart: SignedObject,
+    key: string
+  ): Promise<Record<string, unknown>> {
     if (!this.signer) {
       throw new Error('No signer set');
     }
@@ -48,4 +51,7 @@ class CloudlessCart {
 }
 export { CloudlessCart, JsonSignature };
 export { default as TokenCrypto } from './tokenCrypto';
-export { default as CloudlessCrypto, EncryptThenSignPayload } from './cloudlessCrypto';
+export {
+  default as CloudlessCrypto,
+  EncryptThenSignPayload,
+} from './cloudlessCrypto';
