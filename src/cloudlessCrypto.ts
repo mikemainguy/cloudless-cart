@@ -118,7 +118,10 @@ export default class CloudlessCrypto {
     };
 
     // Step 4: Sign the encrypted payload + metadata
-    return await this.signer.sign(signingKey, signaturePayload as unknown as Record<string, unknown>);
+    return await this.signer.sign(
+      signingKey,
+      signaturePayload as unknown as Record<string, unknown>
+    );
   }
 
   public async verifyThenDecrypt(
