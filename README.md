@@ -849,6 +849,137 @@ const signingKey = await crypto.generateSigningKeyPair(config.signingAlgorithm);
 const encryptionKey = await crypto.generateEncryptionKeyPair(config.encryptionAlgorithm);
 ```
 
+## Payload Compression
+
+Cloudless Cart automatically compresses payloads using Brotli compression to reduce token size and improve performance. This is especially beneficial for large shopping cart data or when transmitting over bandwidth-constrained networks.
+
+### How Compression Works
+
+- **Automatic**: Compression is enabled by default for all encryption operations
+- **Intelligent**: Only compresses when it reduces payload size (skips compression for small payloads where compression overhead would increase size)
+- **Transparent**: Decompression happens automatically during decryption
+- **Standard**: Uses Brotli compression algorithm for optimal compression ratios
+- **Secure**: Compression happens before encryption, maintaining security properties
+
+### Compression Benefits
+
+- **Reduced Network Usage**: Smaller tokens mean less bandwidth consumption
+- **Improved Performance**: Faster transmission times, especially over slow connections
+- **Cost Savings**: Lower data transfer costs in cloud environments
+- **Better User Experience**: Faster page loads and API responses
+
+### Compression Configuration
+
+```typescript
+// Compression enabled by default (recommended)
+const encryptedToken = await crypto.encryptToken(keyId, payload);
+
+// Explicitly enable compression
+const encryptedToken = await crypto.encryptToken(keyId, payload, { 
+  compress: true,
+  expirationTime: '2h' 
+});
+
+// Disable compression if needed
+const encryptedToken = await crypto.encryptToken(keyId, payload, { 
+  compress: false 
+});
+
+// Works with all encryption methods
+const signThenEncrypt = await crypto.signAndEncrypt(
+  signingKey, 
+  encryptionKey, 
+  payload,
+  { compress: true }
+);
+
+const encryptThenSign = await crypto.encryptThenSign(
+  encryptionKey,
+  signingKey, 
+  payload,
+  { compress: true }
+);
+```
+
+### Compression Example with Large Cart Data
+
+```typescript
+import { CloudlessCrypto } from 'cloudless-cart';
+
+const crypto = new CloudlessCrypto();
+const encryptionKey = (await crypto.generateEncryptionKeyPair()).key;
+
+// Large shopping cart with many items
+const largeCart = {
+  userId: 'user123',
+  sessionId: 'sess_abc123',
+  items: Array.from({ length: 50 }, (_, i) => ({
+    id: `item-${i}`,
+    name: `Product ${i} with very long descriptive name and details`,
+    description: 'A detailed product description with specifications, features, and benefits that makes this payload much larger and more suitable for compression',
+    price: Math.round(Math.random() * 100 + 10),
+    quantity: Math.floor(Math.random() * 5) + 1,
+    category: ['Electronics', 'Clothing', 'Books', 'Home & Garden'][i % 4],
+    metadata: {
+      sku: `SKU-${i}-${Math.random().toString(36).substr(2, 9)}`,
+      weight: Math.random() * 5,
+      dimensions: { l: 10, w: 8, h: 6 },
+      tags: ['featured', 'bestseller', 'new', 'sale']
+    }
+  })),
+  discounts: [
+    { code: 'SAVE10', amount: 10, type: 'percentage' },
+    { code: 'FREESHIP', amount: 5.99, type: 'fixed' }
+  ],
+  metadata: {
+    source: 'web-app',
+    userAgent: 'Mozilla/5.0 (compatible browser info)',
+    timestamp: Date.now(),
+    version: '1.0.0'
+  }
+};
+
+console.log('Original cart size:', JSON.stringify(largeCart).length, 'characters');
+
+// Encrypt with compression (default)
+const compressedToken = await crypto.encryptToken(encryptionKey, largeCart);
+console.log('Compressed token size:', compressedToken.length, 'characters');
+
+// Encrypt without compression for comparison
+const uncompressedToken = await crypto.encryptToken(encryptionKey, largeCart, { 
+  compress: false 
+});
+console.log('Uncompressed token size:', uncompressedToken.length, 'characters');
+
+// Compression ratio
+const ratio = ((uncompressedToken.length - compressedToken.length) / uncompressedToken.length * 100).toFixed(1);
+console.log(`Compression saved ${ratio}% of token size`);
+
+// Decompression is automatic and transparent
+const decryptedCart = await crypto.decryptToken(encryptionKey, compressedToken);
+console.log('Decrypted cart items count:', decryptedCart.items.length);
+```
+
+### When Compression is Most Effective
+
+- **Large, repetitive data**: Shopping carts with many similar items
+- **JSON with repeated keys**: Standard e-commerce data structures  
+- **Text-heavy content**: Product descriptions, user comments, addresses
+- **Metadata-rich payloads**: Detailed product information, analytics data
+
+### Performance Considerations
+
+- **CPU vs Network Trade-off**: Slight CPU overhead for compression/decompression vs significant network savings
+- **Optimal for Most Cases**: Modern devices handle Brotli compression efficiently
+- **Automatic Optimization**: Library only compresses when beneficial
+- **Caching Benefits**: Compressed tokens are more cache-friendly due to smaller size
+
+### Security Notes
+
+- **Compression Before Encryption**: Payload is compressed before encryption, maintaining security
+- **No Information Leakage**: Compression ratio doesn't reveal information about encrypted content  
+- **CRIME/BREACH Protection**: Since compression happens before encryption, not susceptible to compression-based attacks on HTTPS
+
 ## API Reference
 
 ### CloudlessCrypto Class
@@ -872,6 +1003,29 @@ const encryptionKey = await crypto.generateEncryptionKeyPair(config.encryptionAl
 #### Direct Encryption/Decryption
 - `encryptToken(key, payload, options?)` - Encrypt a payload
 - `decryptToken(key, token)` - Decrypt a token
+
+### EncryptionOptions Interface
+
+```typescript
+interface EncryptionOptions {
+  audience?: string;       // JWT audience claim
+  expirationTime?: string; // JWT expiration time (e.g., '2h', '1d')
+  issuer?: string;         // JWT issuer claim
+  compress?: boolean;      // Enable/disable Brotli compression (default: true)
+}
+```
+
+**Example:**
+```typescript
+const options: EncryptionOptions = {
+  audience: 'shopping-cart-api',
+  expirationTime: '4h',
+  issuer: 'my-app',
+  compress: true  // Enable compression for large payloads
+};
+
+const token = await crypto.encryptToken(keyId, payload, options);
+```
 
 ### CloudlessCart Class (Legacy)
 

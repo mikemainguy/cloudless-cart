@@ -3,7 +3,7 @@
   "version": "0.1.8",
   "description": "simple module to create distributed secure shopping carts",
   "types": "./dist/index.d.ts",
-    "main": "./dist/index.js",
+  "main": "./dist/index.js",
   "files": [
     "./dist/**/*"
   ],
@@ -15,6 +15,8 @@
     "lint": "eslint ./src/ --fix",
     "test:watch": "jest --watch",
     "test": "jest --coverage",
+    "test:performance": "jest --testPathPattern=performance-simple --verbose --no-coverage --silent=false",
+    "test:performance:report": "jest --testPathPattern=performance-markdown --verbose --no-coverage --silent=false",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
@@ -40,6 +42,7 @@
   },
   "homepage": "https://github.com/mikemainguy/cloudless-cart#readme",
   "devDependencies": {
+    "@types/brotli": "^1.3.4",
     "@types/jest": "^29.5.13",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
@@ -59,10 +62,11 @@
   },
   "dependencies": {
     "@types/node": "^22.8.1",
-    "ts-node": "^10.9.2",
-    "jose": "^5.9.6",
-    "uuid": "^10.0.0",
     "@types/uuid": "^10.0.0",
-    "fast-json-stable-stringify": "^2.1.0"
+    "brotli": "^1.3.3",
+    "fast-json-stable-stringify": "^2.1.0",
+    "jose": "^5.9.6",
+    "ts-node": "^10.9.2",
+    "uuid": "^10.0.0"
   }
 }

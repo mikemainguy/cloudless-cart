@@ -2,11 +2,13 @@ import * as jose from 'jose';
 import { JWK, KeyLike, JWTPayload } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyStore, KeyPair } from './jsonSignature';
+import * as brotli from 'brotli';
 
 export interface EncryptionOptions {
   audience?: string;
   expirationTime?: string;
   issuer?: string;
+  compress?: boolean;
 }
 
 export default class TokenCrypto {
@@ -97,11 +99,48 @@ export default class TokenCrypto {
     this.log('Starting token encryption for key:', keyId);
 
     try {
-      const jwt = new jose.EncryptJWT(payload)
+      let processedPayload = payload;
+      const headers: Record<string, any> = {
+        alg: keyPair.alg || 'RSA-OAEP-256',
+        enc: 'A256GCM',
+        kid: keyId,
+      };
+
+      // Apply compression if enabled
+      if (options.compress !== false) {
+        // Default to true
+        const payloadString = JSON.stringify(payload);
+        const payloadBuffer = Buffer.from(payloadString, 'utf8');
+        const compressOptions = {
+          mode: 1 as const, // 1 = text mode for JSON data
+          quality: 11 as const, // Maximum compression quality
+          lgwin: 22 as const, // Default window size
+        };
+        const compressed = brotli.compress(payloadBuffer, compressOptions);
+        
+        if (compressed && compressed.length < payloadBuffer.length) {
+          processedPayload = {
+            _compressed: Buffer.from(compressed).toString('base64'),
+            _originalSize: payloadBuffer.length,
+            _compression: 'br',
+          };
+          this.log(
+            'Payload compressed:',
+            payloadBuffer.length,
+            '->',
+            compressed.length,
+            'bytes'
+          );
+        } else {
+          this.log('Compression skipped - no size benefit');
+        }
+      }
+
+      const jwt = new jose.EncryptJWT(processedPayload)
         .setProtectedHeader({
-          alg: keyPair.alg || 'RSA-OAEP-256',
-          enc: 'A256GCM',
-          kid: keyId,
+          alg: headers.alg,
+          enc: headers.enc,
+          kid: headers.kid,
         })
         .setIssuedAt()
         .setJti(uuidv4())
@@ -152,6 +191,34 @@ export default class TokenCrypto {
         'ms'
       );
       this.log('Protected header:', protectedHeader);
+
+      // Handle decompression if compressed
+      if (payload._compression === 'br' && payload._compressed) {
+        const compressedBuffer = Buffer.from(
+          payload._compressed as string,
+          'base64'
+        );
+        const decompressed = brotli.decompress(compressedBuffer);
+
+        if (!decompressed) {
+          throw new Error('Failed to decompress payload');
+        }
+
+        const decompressedString = Buffer.from(decompressed).toString('utf8');
+        const originalPayload = JSON.parse(decompressedString) as Record<
+          string,
+          unknown
+        >;
+
+        this.log(
+          'Payload decompressed:',
+          compressedBuffer.length,
+          '->',
+          decompressed.length,
+          'bytes'
+        );
+        return originalPayload;
+      }
 
       return payload;
     } catch (error) {
