@@ -1,6 +1,17 @@
 import JsonSignature, { KeyStore } from './jsonSignature';
 import TokenCrypto, { EncryptionOptions } from './tokenCrypto';
 import { JWTPayload } from 'jose';
+import { createHash } from 'crypto';
+import stringify from 'fast-json-stable-stringify';
+
+interface EncryptThenSignPayload {
+  encrypted: string;
+  payloadHash: string;
+  timestamp: number;
+  version: number;
+}
+
+export { EncryptThenSignPayload };
 
 export default class CloudlessCrypto {
   public readonly signer: JsonSignature;
@@ -57,5 +68,63 @@ export default class CloudlessCrypto {
 
   public async decryptToken(key: string, encryptedToken: string): Promise<object> {
     return await this.encryptor.decryptToken(key, encryptedToken);
+  }
+
+  public async encryptThenSign(
+    encryptionKey: string,
+    signingKey: string,
+    payload: JWTPayload,
+    encryptionOptions?: EncryptionOptions
+  ): Promise<any> {
+    // Step 1: Calculate hash of original payload for integrity verification
+    const payloadString = stringify(payload); // Hash the exact input payload
+    const payloadHash = createHash('sha256').update(payloadString).digest('hex');
+    
+    // Step 2: Encrypt the payload (this adds JWT claims like iat, exp, etc.)
+    const encrypted = await this.encryptor.encryptToken(encryptionKey, payload, encryptionOptions);
+    
+    // Step 3: Create signature payload with metadata (NO plaintext data!)
+    const signaturePayload: EncryptThenSignPayload = {
+      encrypted,
+      payloadHash, // Hash provides integrity without revealing original data
+      timestamp: Date.now(),
+      version: 1
+    };
+    
+    // Step 4: Sign the encrypted payload + metadata
+    return await this.signer.sign(signingKey, signaturePayload);
+  }
+
+  public async verifyThenDecrypt(
+    signingKey: string,
+    encryptionKey: string,
+    signedToken: any
+  ): Promise<object> {
+    // Step 1: Verify signature first (fail fast)
+    const verified = await this.signer.verify(signedToken, signingKey) as EncryptThenSignPayload;
+    
+    // Step 2: Decrypt the payload (includes JWT claims)
+    const decrypted = await this.encryptor.decryptToken(encryptionKey, verified.encrypted);
+    
+    // Step 3: Extract original payload fields (remove JWT claims for hash verification)
+    const originalPayloadFields = { ...decrypted } as any;
+    // Remove standard JWT claims that weren't in the original payload
+    delete originalPayloadFields.iat;
+    delete originalPayloadFields.exp;
+    delete originalPayloadFields.aud;
+    delete originalPayloadFields.iss;
+    delete originalPayloadFields.jti;
+    delete originalPayloadFields.nbf;
+    delete originalPayloadFields.sub;
+    
+    // Step 4: Verify payload hash for integrity/non-repudiation
+    const reconstructedString = stringify(originalPayloadFields);
+    const actualHash = createHash('sha256').update(reconstructedString).digest('hex');
+    
+    if (actualHash !== verified.payloadHash) {
+      throw new Error('Payload hash mismatch - data integrity violation');
+    }
+    
+    return decrypted;
   }
 }
