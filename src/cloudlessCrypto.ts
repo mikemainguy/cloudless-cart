@@ -1,8 +1,29 @@
 import JsonSignature, { KeyStore, SignedObject } from './jsonSignature';
 import TokenCrypto, { EncryptionOptions } from './tokenCrypto';
 import { JWTPayload } from 'jose';
-import { createHash } from 'crypto';
 import stringify from 'fast-json-stable-stringify';
+
+// Browser-compatible hash function
+async function hashSHA256(data: string): Promise<string> {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    // Browser environment - use Web Crypto API
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } else if (typeof require !== 'undefined') {
+    // Node.js environment
+    try {
+      const { createHash } = require('crypto');
+      return createHash('sha256').update(data).digest('hex');
+    } catch (e) {
+      throw new Error('SHA-256 hashing not available in this environment');
+    }
+  } else {
+    throw new Error('SHA-256 hashing not available in this environment');
+  }
+}
 
 interface EncryptThenSignPayload {
   encrypted: string;
@@ -98,9 +119,7 @@ export default class CloudlessCrypto {
   ): Promise<any> {
     // Step 1: Calculate hash of original payload for integrity verification
     const payloadString = stringify(payload); // Hash the exact input payload
-    const payloadHash = createHash('sha256')
-      .update(payloadString)
-      .digest('hex');
+    const payloadHash = await hashSHA256(payloadString);
 
     // Step 2: Encrypt the payload (this adds JWT claims like iat, exp, etc.)
     const encrypted = await this.encryptor.encryptToken(
@@ -154,9 +173,7 @@ export default class CloudlessCrypto {
 
     // Step 4: Verify payload hash for integrity/non-repudiation
     const reconstructedString = stringify(originalPayloadFields);
-    const actualHash = createHash('sha256')
-      .update(reconstructedString)
-      .digest('hex');
+    const actualHash = await hashSHA256(reconstructedString);
 
     if (actualHash !== verified.payloadHash) {
       throw new Error('Payload hash mismatch - data integrity violation');

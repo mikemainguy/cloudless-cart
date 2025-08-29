@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudlessCart No-Modules Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>CloudlessCart No-Modules Test</h1>
+    <div id="results">Loading...</div>
+
+    <!-- Load from CDN (easier than local modules) -->
+    <script src="https://unpkg.com/jose@5.9.6/dist/browser/jose.js"></script>
+    <script src="https://unpkg.com/uuid@10.0.0/dist/umd/uuid.min.js"></script>
+    
+    <!-- Load our library -->
+    <script src="../dist/browser/cloudless-cart.js"></script>
+
+    <script>
+        setTimeout(() => {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                if (typeof CloudlessCart === 'undefined') {
+                    throw new Error('CloudlessCart not loaded');
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✓ Success!</h3>
+                        <p>CloudlessCart loaded successfully</p>
+                        <p>Available: ${Object.keys(CloudlessCart).join(', ')}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h3>✗ Failed</h3>
+                        <p>${error.message}</p>
+                        <p>CloudlessCart type: ${typeof CloudlessCart}</p>
+                    </div>
+                `;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

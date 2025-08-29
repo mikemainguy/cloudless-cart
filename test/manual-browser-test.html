@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudlessCart - Interactive Browser Test</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #343a40;
+            --light: #f8f9fa;
+            --border: #dee2e6;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: var(--dark);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-top: 30px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: var(--light);
+            border-radius: 5px;
+        }
+        
+        .status-bar {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+        
+        .status-indicator.success {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        
+        .test-section {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        button.success {
+            background: var(--success);
+        }
+        
+        button.success:hover {
+            background: #218838;
+        }
+        
+        button.danger {
+            background: var(--danger);
+        }
+        
+        button.danger:hover {
+            background: #c82333;
+        }
+        
+        .output {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .output.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .output.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .key-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .key-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .key-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary);
+        }
+        
+        .key-card pre {
+            margin: 0;
+            padding: 10px;
+            background: var(--light);
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab:hover {
+            background: var(--light);
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .console-line {
+            margin-bottom: 5px;
+        }
+        
+        .console-line.error {
+            color: #f48771;
+        }
+        
+        .console-line.success {
+            color: #89d185;
+        }
+        
+        .console-line.info {
+            color: #75beff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 CloudlessCart - Interactive Browser Test</h1>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-indicator" id="libraryStatus"></span>
+                <span>Library: <strong id="libraryStatusText">Loading...</strong></span>
+            </div>
+            <div class="status-item">
+                <span class="status-indicator" id="cryptoStatus"></span>
+                <span>Web Crypto: <strong id="cryptoStatusText">Checking...</strong></span>
+            </div>
+            <div class="status-item">
+                <span class="status-indicator" id="compressionStatus"></span>
+                <span>Compression: <strong id="compressionStatusText">Checking...</strong></span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('keys')">🔑 Key Management</button>
+            <button class="tab" onclick="switchTab('encrypt')">🔒 Encryption/Decryption</button>
+            <button class="tab" onclick="switchTab('compress')">📦 Compression</button>
+            <button class="tab" onclick="switchTab('performance')">⚡ Performance</button>
+            <button class="tab" onclick="switchTab('console')">🖥️ Console</button>
+        </div>
+
+        <!-- Key Management Tab -->
+        <div id="keys-tab" class="tab-content active">
+            <h2>Key Generation & Management</h2>
+            
+            <div class="test-section">
+                <h3>Generate Keys</h3>
+                <div class="input-group">
+                    <label>Key Type:</label>
+                    <select id="keyType">
+                        <option value="signing">Signing Keys (PS256)</option>
+                        <option value="encryption">Encryption Keys (RSA-OAEP-256)</option>
+                    </select>
+                </div>
+                <button onclick="generateKeys()" class="success">🔐 Generate Key Pair</button>
+                <button onclick="clearKeys()" class="danger">🗑️ Clear All Keys</button>
+                
+                <div id="keysOutput" class="key-display"></div>
+            </div>
+        </div>
+
+        <!-- Encryption/Decryption Tab -->
+        <div id="encrypt-tab" class="tab-content">
+            <h2>Encryption & Decryption</h2>
+            
+            <div class="test-section">
+                <h3>Encrypt Then Sign</h3>
+                <div class="input-group">
+                    <label>Payload (JSON):</label>
+                    <textarea id="encryptPayload">{
+  "message": "Hello CloudlessCart!",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "user": "test-user",
+  "data": {
+    "items": ["item1", "item2"],
+    "total": 100
+  }
+}</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Compression:</label>
+                    <select id="compressionOption">
+                        <option value="brotli">Brotli</option>
+                        <option value="gzip">Gzip</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <button onclick="encryptAndSign()" class="success">🔒 Encrypt & Sign</button>
+                
+                <div id="encryptOutput" class="output"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>Verify Then Decrypt</h3>
+                <div class="input-group">
+                    <label>Encrypted Token:</label>
+                    <textarea id="decryptToken" placeholder="Paste encrypted token here..."></textarea>
+                </div>
+                <button onclick="verifyAndDecrypt()" class="success">🔓 Verify & Decrypt</button>
+                
+                <div id="decryptOutput" class="output"></div>
+            </div>
+        </div>
+
+        <!-- Compression Tab -->
+        <div id="compress-tab" class="tab-content">
+            <h2>Compression Testing</h2>
+            
+            <div class="test-section">
+                <h3>Test Compression</h3>
+                <div class="input-group">
+                    <label>Test Data:</label>
+                    <textarea id="compressionInput">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. This text should compress well because it contains repeating patterns and common words. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</textarea>
+                </div>
+                <button onclick="testCompression()">🗜️ Test Compression</button>
+                
+                <div id="compressionOutput" class="output"></div>
+                
+                <div class="metrics" id="compressionMetrics"></div>
+            </div>
+        </div>
+
+        <!-- Performance Tab -->
+        <div id="performance-tab" class="tab-content">
+            <h2>Performance Testing</h2>
+            
+            <div class="test-section">
+                <h3>Benchmark Operations</h3>
+                <div class="input-group">
+                    <label>Number of Iterations:</label>
+                    <input type="number" id="perfIterations" value="10" min="1" max="1000">
+                </div>
+                <div class="input-group">
+                    <label>Payload Size (characters):</label>
+                    <input type="number" id="perfPayloadSize" value="1000" min="10" max="100000">
+                </div>
+                <button onclick="runPerformanceTest()">⚡ Run Performance Test</button>
+                
+                <div id="performanceOutput" class="output"></div>
+                
+                <div class="metrics" id="performanceMetrics"></div>
+            </div>
+        </div>
+
+        <!-- Console Tab -->
+        <div id="console-tab" class="tab-content">
+            <h2>Debug Console</h2>
+            
+            <div class="test-section">
+                <button onclick="clearConsole()">🗑️ Clear Console</button>
+                <button onclick="runAllTests()">🧪 Run All Tests</button>
+                <button onclick="exportTestResults()">📥 Export Results</button>
+                
+                <div id="debugConsole" class="console"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Polyfills and setup -->
+    <script>
+        // Provide polyfills for Node.js modules
+        window.fs = { readFileSync: () => null };
+        window.path = { join: (...args) => args.join('/'), normalize: (p) => p };
+        window.util = { promisify: (fn) => fn };
+        window.Buffer = window.Buffer || { from: (data) => new Uint8Array(data) };
+        window.Browser = window.Browser || {};
+        window.brotli = null; // Will use brotli-wasm
+    </script>
+
+    <!-- Load CloudlessCart -->
+    <script src="../dist/browser/cloudless-cart.js"></script>
+
+    <!-- Main application script -->
+    <script>
+        // Global variables
+        let crypto = null;
+        let signingKeys = null;
+        let encryptionKeys = null;
+        let lastToken = null;
+        const consoleLines = [];
+
+        // Console logging
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = `[${timestamp}] ${message}`;
+            consoleLines.push({ text: line, type });
+            
+            const consoleDiv = document.getElementById('debugConsole');
+            if (consoleDiv) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = `console-line ${type}`;
+                lineDiv.textContent = line;
+                consoleDiv.appendChild(lineDiv);
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            }
+            
+            // Also log to browser console
+            console.log(`[CloudlessCart Test] ${message}`);
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            await initializeLibrary();
+        });
+
+        async function initializeLibrary() {
+            try {
+                // Check if library loaded
+                if (typeof CloudlessCart === 'undefined') {
+                    throw new Error('CloudlessCart library failed to load');
+                }
+                
+                updateStatus('library', true, 'Loaded');
+                log('CloudlessCart library loaded successfully', 'success');
+                
+                // Check for CloudlessCrypto
+                if (!CloudlessCart.CloudlessCrypto) {
+                    throw new Error('CloudlessCrypto not available');
+                }
+                
+                // Initialize crypto instance
+                crypto = new CloudlessCart.CloudlessCrypto();
+                log('CloudlessCrypto instance created', 'success');
+                
+                // Check Web Crypto API
+                const hasWebCrypto = typeof window.crypto !== 'undefined' && 
+                                   typeof window.crypto.subtle !== 'undefined';
+                updateStatus('crypto', hasWebCrypto, hasWebCrypto ? 'Available' : 'Not Available');
+                log(`Web Crypto API: ${hasWebCrypto ? 'Available' : 'Not Available'}`, hasWebCrypto ? 'success' : 'error');
+                
+                // Check compression
+                const hasCompression = typeof CompressionStream !== 'undefined';
+                updateStatus('compression', hasCompression, hasCompression ? 'Available' : 'Not Available');
+                log(`Compression API: ${hasCompression ? 'Available' : 'Not Available'}`, hasCompression ? 'success' : 'error');
+                
+                // Generate initial keys
+                await generateKeys();
+                
+            } catch (error) {
+                updateStatus('library', false, 'Error');
+                log(`Initialization error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        function updateStatus(type, success, text) {
+            const indicator = document.getElementById(`${type}Status`);
+            const textElement = document.getElementById(`${type}StatusText`);
+            
+            if (indicator) {
+                indicator.classList.toggle('success', success);
+            }
+            if (textElement) {
+                textElement.textContent = text;
+            }
+        }
+
+        // Key Management Functions
+        async function generateKeys() {
+            try {
+                const keyType = document.getElementById('keyType')?.value || 'signing';
+                
+                if (keyType === 'signing' || !signingKeys) {
+                    log('Generating signing key pair...', 'info');
+                    signingKeys = await crypto.generateSigningKeyPair();
+                    log('Signing keys generated', 'success');
+                }
+                
+                if (keyType === 'encryption' || !encryptionKeys) {
+                    log('Generating encryption key pair...', 'info');
+                    encryptionKeys = await crypto.generateEncryptionKeyPair();
+                    log('Encryption keys generated', 'success');
+                }
+                
+                displayKeys();
+                
+            } catch (error) {
+                log(`Key generation error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        function displayKeys() {
+            const output = document.getElementById('keysOutput');
+            if (!output) return;
+            
+            output.innerHTML = '';
+            
+            if (signingKeys) {
+                output.innerHTML += `
+                    <div class="key-card">
+                        <h4>🔏 Signing Keys (PS256)</h4>
+                        <strong>Key ID:</strong>
+                        <pre>${signingKeys.key}</pre>
+                        <strong>Public Key (JWK):</strong>
+                        <pre>${JSON.stringify(signingKeys.publicKey, null, 2)}</pre>
+                    </div>
+                `;
+            }
+            
+            if (encryptionKeys) {
+                output.innerHTML += `
+                    <div class="key-card">
+                        <h4>🔐 Encryption Keys (RSA-OAEP-256)</h4>
+                        <strong>Key ID:</strong>
+                        <pre>${encryptionKeys.key}</pre>
+                        <strong>Public Key (JWK):</strong>
+                        <pre>${JSON.stringify(encryptionKeys.publicKey, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        function clearKeys() {
+            signingKeys = null;
+            encryptionKeys = null;
+            lastToken = null;
+            document.getElementById('keysOutput').innerHTML = '<p>Keys cleared</p>';
+            log('All keys cleared', 'info');
+        }
+
+        // Encryption/Decryption Functions
+        async function encryptAndSign() {
+            try {
+                if (!signingKeys || !encryptionKeys) {
+                    await generateKeys();
+                }
+                
+                const payloadText = document.getElementById('encryptPayload').value;
+                const compressionMethod = document.getElementById('compressionOption').value;
+                
+                const payload = JSON.parse(payloadText);
+                log(`Encrypting payload (compression: ${compressionMethod})...`, 'info');
+                
+                const startTime = performance.now();
+                const signedObject = await crypto.encryptThenSign(
+                    encryptionKeys.key,
+                    signingKeys.key,
+                    payload,
+                    { compress: compressionMethod }
+                );
+                const endTime = performance.now();
+                
+                // Convert SignedObject to JSON string
+                const token = JSON.stringify(signedObject);
+                lastToken = token;
+                
+                const output = document.getElementById('encryptOutput');
+                output.className = 'output success';
+                output.textContent = `✅ Successfully encrypted and signed!\n\n` +
+                    `Time: ${(endTime - startTime).toFixed(2)}ms\n` +
+                    `Token length: ${token.length} characters\n` +
+                    `Compression: ${compressionMethod}\n\n` +
+                    `Token:\n${token}`;
+                
+                // Auto-copy to decrypt field
+                document.getElementById('decryptToken').value = token;
+                
+                log(`Encryption completed in ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                
+            } catch (error) {
+                const output = document.getElementById('encryptOutput');
+                output.className = 'output error';
+                output.textContent = `❌ Error: ${error.message}`;
+                log(`Encryption error: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifyAndDecrypt() {
+            try {
+                if (!signingKeys || !encryptionKeys) {
+                    throw new Error('Keys not generated. Please generate keys first.');
+                }
+                
+                const tokenString = document.getElementById('decryptToken').value.trim();
+                if (!tokenString) {
+                    throw new Error('Please provide a token to decrypt');
+                }
+                
+                log('Verifying and decrypting token...', 'info');
+                
+                // Parse the JSON string back to SignedObject
+                const token = JSON.parse(tokenString);
+                
+                const startTime = performance.now();
+                const decrypted = await crypto.verifyThenDecrypt(
+                    signingKeys.key,
+                    encryptionKeys.key,
+                    token
+                );
+                const endTime = performance.now();
+                
+                const output = document.getElementById('decryptOutput');
+                output.className = 'output success';
+                output.textContent = `✅ Successfully verified and decrypted!\n\n` +
+                    `Time: ${(endTime - startTime).toFixed(2)}ms\n\n` +
+                    `Decrypted payload:\n${JSON.stringify(decrypted, null, 2)}`;
+                
+                log(`Decryption completed in ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                
+            } catch (error) {
+                const output = document.getElementById('decryptOutput');
+                output.className = 'output error';
+                output.textContent = `❌ Error: ${error.message}`;
+                log(`Decryption error: ${error.message}`, 'error');
+            }
+        }
+
+        // Compression Functions
+        async function testCompression() {
+            try {
+                const input = document.getElementById('compressionInput').value;
+                const encoder = new TextEncoder();
+                const inputBytes = encoder.encode(input);
+                
+                log('Testing compression methods...', 'info');
+                
+                // Test different compression methods
+                const results = {
+                    original: inputBytes.length,
+                    brotli: null,
+                    gzip: null,
+                    bestMethod: 'none',
+                    bestRatio: 0
+                };
+                
+                // Try Gzip compression
+                if (typeof CompressionStream !== 'undefined') {
+                    try {
+                        const stream = new CompressionStream('gzip');
+                        const writer = stream.writable.getWriter();
+                        const reader = stream.readable.getReader();
+                        
+                        writer.write(inputBytes);
+                        writer.close();
+                        
+                        const chunks = [];
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            chunks.push(value);
+                        }
+                        
+                        const compressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+                        let offset = 0;
+                        for (const chunk of chunks) {
+                            compressed.set(chunk, offset);
+                            offset += chunk.length;
+                        }
+                        
+                        const gzipRatio = ((1 - compressed.length / inputBytes.length) * 100);
+                        results.gzip = {
+                            size: compressed.length,
+                            ratio: gzipRatio.toFixed(1)
+                        };
+                        
+                        if (gzipRatio > results.bestRatio) {
+                            results.bestMethod = 'gzip';
+                            results.bestRatio = gzipRatio;
+                        }
+                        
+                        log(`Gzip compression: ${compressed.length} bytes (${gzipRatio.toFixed(1)}% reduction)`, 'success');
+                    } catch (e) {
+                        log(`Gzip compression failed: ${e.message}`, 'error');
+                    }
+                }
+                
+                // Note: Brotli-WASM test would require the module to be loaded
+                // For now, we'll just indicate it's available if the WASM file is present
+                
+                // Display results
+                const output = document.getElementById('compressionOutput');
+                output.className = 'output success';
+                output.textContent = `Compression Test Results:\n\n` +
+                    `Original size: ${results.original} bytes\n\n` +
+                    `Gzip: ${results.gzip ? `${results.gzip.size} bytes (${results.gzip.ratio}% reduction)` : 'Not available'}\n` +
+                    `Brotli: ${results.brotli ? `${results.brotli.size} bytes (${results.brotli.ratio}% reduction)` : 'Not tested (requires WASM)'}\n\n` +
+                    `Best method: ${results.bestMethod} (${results.bestRatio.toFixed(1)}% reduction)`;
+                
+                // Display metrics
+                const metricsDiv = document.getElementById('compressionMetrics');
+                metricsDiv.innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-value">${results.original}</div>
+                        <div class="metric-label">Original Bytes</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${results.gzip ? results.gzip.size : 'N/A'}</div>
+                        <div class="metric-label">Gzip Bytes</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${results.gzip ? results.gzip.ratio + '%' : 'N/A'}</div>
+                        <div class="metric-label">Gzip Ratio</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${results.bestMethod}</div>
+                        <div class="metric-label">Best Method</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                const output = document.getElementById('compressionOutput');
+                output.className = 'output error';
+                output.textContent = `❌ Error: ${error.message}`;
+                log(`Compression test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Performance Testing
+        async function runPerformanceTest() {
+            try {
+                const iterations = parseInt(document.getElementById('perfIterations').value);
+                const payloadSize = parseInt(document.getElementById('perfPayloadSize').value);
+                
+                if (!signingKeys || !encryptionKeys) {
+                    await generateKeys();
+                }
+                
+                log(`Starting performance test: ${iterations} iterations, ${payloadSize} char payload`, 'info');
+                
+                // Generate test payload
+                const testPayload = {
+                    data: 'x'.repeat(payloadSize),
+                    timestamp: Date.now(),
+                    index: 0
+                };
+                
+                // Test all compression methods
+                const compressionMethods = ['none', 'gzip', 'brotli'];
+                const allResults = {};
+                
+                const output = document.getElementById('performanceOutput');
+                output.className = 'output';
+                output.textContent = 'Running performance test for all compression methods...\n\n';
+                
+                for (const compressionMethod of compressionMethods) {
+                    output.textContent += `Testing ${compressionMethod} compression...\n`;
+                    
+                    const results = {
+                        encrypt: [],
+                        decrypt: [],
+                        tokenSize: [],
+                        total: []
+                    };
+                    
+                    for (let i = 0; i < iterations; i++) {
+                        testPayload.index = i;
+                        testPayload.method = compressionMethod;
+                        
+                        // Use the same keys for all tests
+                        const testSigningKeys = signingKeys;
+                        const testEncryptionKeys = encryptionKeys;
+                        
+                        // Test encryption with specific compression
+                        const encStart = performance.now();
+                        const signedObject = await crypto.encryptThenSign(
+                            testEncryptionKeys.key,
+                            testSigningKeys.key,
+                            testPayload,
+                            { compress: compressionMethod }
+                        );
+                        const encEnd = performance.now();
+                        results.encrypt.push(encEnd - encStart);
+                        
+                        // Track token size
+                        const tokenString = JSON.stringify(signedObject);
+                        results.tokenSize.push(tokenString.length);
+                        
+                        // Test decryption
+                        const decStart = performance.now();
+                        await crypto.verifyThenDecrypt(
+                            testSigningKeys.key,
+                            testEncryptionKeys.key,
+                            signedObject
+                        );
+                        const decEnd = performance.now();
+                        results.decrypt.push(decEnd - decStart);
+                        
+                        results.total.push((encEnd - encStart) + (decEnd - decStart));
+                    }
+                    
+                    // Calculate statistics for this method
+                    const stats = {};
+                    for (const [key, values] of Object.entries(results)) {
+                        const sorted = [...values].sort((a, b) => a - b);
+                        stats[key] = {
+                            min: sorted[0],
+                            max: sorted[sorted.length - 1],
+                            avg: values.reduce((a, b) => a + b, 0) / values.length,
+                            median: sorted[Math.floor(sorted.length / 2)]
+                        };
+                    }
+                    
+                    allResults[compressionMethod] = stats;
+                    output.textContent += `  ✓ ${compressionMethod} completed\n`;
+                }
+                
+                // Format and display results
+                output.className = 'output success';
+                let resultText = `Performance Test Results (${iterations} iterations, ${payloadSize} chars payload):\n\n`;
+                
+                // Add header
+                resultText += '═══════════════════════════════════════════════════════\n\n';
+                
+                // Display results for each compression method
+                for (const [method, stats] of Object.entries(allResults)) {
+                    resultText += `📦 ${method.toUpperCase()} COMPRESSION:\n`;
+                    resultText += `─────────────────────────\n`;
+                    resultText += `Encryption Time (ms):\n`;
+                    resultText += `  Min: ${stats.encrypt.min.toFixed(2)}, Max: ${stats.encrypt.max.toFixed(2)}, Avg: ${stats.encrypt.avg.toFixed(2)}, Median: ${stats.encrypt.median.toFixed(2)}\n`;
+                    resultText += `Decryption Time (ms):\n`;
+                    resultText += `  Min: ${stats.decrypt.min.toFixed(2)}, Max: ${stats.decrypt.max.toFixed(2)}, Avg: ${stats.decrypt.avg.toFixed(2)}, Median: ${stats.decrypt.median.toFixed(2)}\n`;
+                    resultText += `Total Time (ms):\n`;
+                    resultText += `  Min: ${stats.total.min.toFixed(2)}, Max: ${stats.total.max.toFixed(2)}, Avg: ${stats.total.avg.toFixed(2)}, Median: ${stats.total.median.toFixed(2)}\n`;
+                    resultText += `Token Size (chars):\n`;
+                    resultText += `  Min: ${stats.tokenSize.min}, Max: ${stats.tokenSize.max}, Avg: ${Math.round(stats.tokenSize.avg)}, Median: ${stats.tokenSize.median}\n\n`;
+                }
+                
+                // Add comparison summary
+                resultText += '═══════════════════════════════════════════════════════\n';
+                resultText += '📊 COMPARISON SUMMARY:\n';
+                resultText += '─────────────────────────\n';
+                
+                // Find best performance for each metric
+                const noneAvgTime = allResults.none.total.avg;
+                const gzipAvgTime = allResults.gzip.total.avg;
+                const brotliAvgTime = allResults.brotli.total.avg;
+                
+                const noneAvgSize = allResults.none.tokenSize.avg;
+                const gzipAvgSize = allResults.gzip.tokenSize.avg;
+                const brotliAvgSize = allResults.brotli.tokenSize.avg;
+                
+                resultText += `Speed Comparison (avg total time):\n`;
+                resultText += `  None: ${noneAvgTime.toFixed(2)}ms (baseline)\n`;
+                resultText += `  Gzip: ${gzipAvgTime.toFixed(2)}ms (${((gzipAvgTime/noneAvgTime - 1) * 100).toFixed(1)}% ${gzipAvgTime > noneAvgTime ? 'slower' : 'faster'})\n`;
+                resultText += `  Brotli: ${brotliAvgTime.toFixed(2)}ms (${((brotliAvgTime/noneAvgTime - 1) * 100).toFixed(1)}% ${brotliAvgTime > noneAvgTime ? 'slower' : 'faster'})\n\n`;
+                
+                resultText += `Size Comparison (avg token size):\n`;
+                resultText += `  None: ${Math.round(noneAvgSize)} chars (baseline)\n`;
+                resultText += `  Gzip: ${Math.round(gzipAvgSize)} chars (${((1 - gzipAvgSize/noneAvgSize) * 100).toFixed(1)}% reduction)\n`;
+                resultText += `  Brotli: ${Math.round(brotliAvgSize)} chars (${((1 - brotliAvgSize/noneAvgSize) * 100).toFixed(1)}% reduction)\n`;
+                
+                output.textContent = resultText;
+                
+                // Display metrics cards
+                const metricsDiv = document.getElementById('performanceMetrics');
+                metricsDiv.innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-value">${noneAvgTime.toFixed(1)}ms</div>
+                        <div class="metric-label">None (avg time)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${gzipAvgTime.toFixed(1)}ms</div>
+                        <div class="metric-label">Gzip (avg time)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${brotliAvgTime.toFixed(1)}ms</div>
+                        <div class="metric-label">Brotli (avg time)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${Math.round(noneAvgSize)}</div>
+                        <div class="metric-label">None (avg size)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${Math.round(gzipAvgSize)}</div>
+                        <div class="metric-label">Gzip (avg size)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${Math.round(brotliAvgSize)}</div>
+                        <div class="metric-label">Brotli (avg size)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${((1 - gzipAvgSize/noneAvgSize) * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Gzip Compression</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${((1 - brotliAvgSize/noneAvgSize) * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Brotli Compression</div>
+                    </div>
+                `;
+                
+                log('Performance test completed for all compression methods', 'success');
+                
+            } catch (error) {
+                const output = document.getElementById('performanceOutput');
+                output.className = 'output error';
+                output.textContent = `❌ Error: ${error.message}`;
+                log(`Performance test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Console Functions
+        function clearConsole() {
+            consoleLines.length = 0;
+            document.getElementById('debugConsole').innerHTML = '';
+            log('Console cleared', 'info');
+        }
+
+        async function runAllTests() {
+            log('Running all tests...', 'info');
+            
+            try {
+                // Test key generation
+                log('Testing key generation...', 'info');
+                await generateKeys();
+                
+                // Test all compression methods for encryption/decryption
+                const compressionMethods = ['none', 'gzip', 'brotli'];
+                for (const method of compressionMethods) {
+                    log(`Testing encryption/decryption with ${method} compression...`, 'info');
+                    document.getElementById('compressionOption').value = method;
+                    await encryptAndSign();
+                    await verifyAndDecrypt();
+                }
+                
+                // Test compression capabilities
+                log('Testing compression capabilities...', 'info');
+                await testCompression();
+                
+                // Run performance test (small but comprehensive)
+                log('Running performance benchmarks...', 'info');
+                document.getElementById('perfIterations').value = '3';
+                document.getElementById('perfPayloadSize').value = '500';
+                await runPerformanceTest();
+                
+                log('All tests completed successfully!', 'success');
+            } catch (error) {
+                log(`Test suite error: ${error.message}`, 'error');
+            }
+        }
+
+        function exportTestResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                library: {
+                    loaded: typeof CloudlessCart !== 'undefined',
+                    version: CloudlessCart?.version || 'unknown'
+                },
+                capabilities: {
+                    webCrypto: typeof window.crypto?.subtle !== 'undefined',
+                    compression: typeof CompressionStream !== 'undefined'
+                },
+                console: consoleLines,
+                keys: {
+                    signing: signingKeys ? 'Generated' : 'Not generated',
+                    encryption: encryptionKeys ? 'Generated' : 'Not generated'
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cloudless-cart-test-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('Test results exported', 'success');
+        }
+    </script>
+</body>
+</html>

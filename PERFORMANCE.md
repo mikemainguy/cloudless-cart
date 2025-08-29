@@ -1,186 +1,156 @@
-# CloudlessCart Performance Report
+# CloudlessCart Performance Test Results
 
-*Last updated: 2025-08-29*
+## Test Configuration
+- **Date**: 2025-08-29T21:17:46.679Z
+- **Environment**: Node.js v22.17.0
+- **Payload Sizes**: ~100B, ~1KB, ~10KB, ~100KB
+- **Compression Methods**: none, gzip, brotli
+- **Modes Tested**: Sign-Only, Encrypt-Then-Sign, Sign-Then-Encrypt
 
-## Test Environment
+## Performance Summary
 
-- **Node.js Version**: v22.17.0
-- **Platform**: darwin
-- **Architecture**: arm64
-- **Test Framework**: Jest with performance.now() timing
-- **Library Version**: cloudless-cart v0.1.8
+### Compression Method Comparison
 
-## Executive Summary
+| Method | Avg Compression | Avg Time | Notes |
+|--------|----------------|----------|-------|
+| none | -100.4% | 2.03ms | Fastest, no compression |
+| gzip | -27.6% | 3.58ms | Good balance |
+| brotli | -24.6% | 21.73ms | Best compression, higher CPU |
 
-This performance report analyzes the encryption, signing, compression, and timing characteristics of CloudlessCart across different payload sizes and security modes. The tests demonstrate clear patterns in performance vs security trade-offs and highlight the significant benefits of compression for larger payloads.
+### Detailed Results
 
-### Key Findings
-
-🔑 **Performance Insights:**
-- **Sign-Only** mode is fastest but provides no encryption (integrity only)
-- **Compression** provides massive bandwidth savings for payloads >10KB
-- **Encrypt-Then-Sign** generally outperforms Sign-Then-Encrypt
-- **Network overhead** is dramatically reduced with compression
-
-🗜️ **Compression Effectiveness:**
-- **Small payloads (≤1KB)**: Minimal compression benefit due to overhead
-- **Medium payloads (10KB)**: ~70-80% size reduction
-- **Large payloads (100KB)**: ~90-95% size reduction
-
-## Detailed Performance Results
-
-### 100B Payload (269B actual)
-
-| Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
-|------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 1.87ms | 0.47ms | **2.33ms** | 769B | +185.9% | ❌ |
-| Encrypt-Then-Sign | 2.22ms | 2.28ms | **4.50ms** | 1.6KB | +492.6% | ❌ |
-| Encrypt-Then-Sign+Compress | 8.64ms | 1.25ms | **9.88ms** | 1.6KB | +507.1% | ✅ |
-| Sign-Then-Encrypt | 0.73ms | 0.77ms | **1.49ms** | 1.6KB | +504.5% | ❌ |
-| Sign-Then-Encrypt+Compress | 2.76ms | 1.11ms | **3.87ms** | 1.7KB | +538.7% | ✅ |
-
-#### Analysis for 100B
-
-- **Fastest Option**: Sign-Only (2.33ms total)
-- **Fastest Encrypted**: Sign-Then-Encrypt (1.49ms total)
-- **Smallest Token**: Sign-Only (769B)
-- **Average Compression**: 522.9% size reduction
-
-
-### 1KB Payload (927B actual)
-
-| Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
-|------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 0.70ms | 0.12ms | **0.82ms** | 1.4KB | +53.9% | ❌ |
-| Encrypt-Then-Sign | 0.83ms | 0.76ms | **1.59ms** | 2.4KB | +166.7% | ❌ |
-| Encrypt-Then-Sign+Compress | 2.85ms | 1.15ms | **4.00ms** | 2.0KB | +119.3% | ✅ |
-| Sign-Then-Encrypt | 0.79ms | 0.90ms | **1.69ms** | 2.4KB | +170.0% | ❌ |
-| Sign-Then-Encrypt+Compress | 2.57ms | 1.27ms | **3.84ms** | 2.1KB | +131.5% | ✅ |
-
-#### Analysis for 1KB
-
-- **Fastest Option**: Sign-Only (0.82ms total)
-- **Smallest Token**: Sign-Only (1.4KB)
-- **Average Compression**: 125.4% size reduction
-
-
-### 10KB Payload (9.0KB actual)
-
-| Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
-|------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 0.88ms | 0.35ms | **1.22ms** | 9.5KB | +5.4% | ❌ |
-| Encrypt-Then-Sign | 1.35ms | 1.30ms | **2.65ms** | 13.2KB | +46.8% | ❌ |
-| Encrypt-Then-Sign+Compress | 5.63ms | 1.92ms | **7.54ms** | 3.3KB | -63.3% | ✅ |
-| Sign-Then-Encrypt | 0.97ms | 0.95ms | **1.92ms** | 13.2KB | +47.1% | ❌ |
-| Sign-Then-Encrypt+Compress | 4.90ms | 1.70ms | **6.61ms** | 3.4KB | -62.1% | ✅ |
-
-#### Analysis for 10KB
-
-- **Fastest Option**: Sign-Only (1.22ms total)
-- **Smallest Token**: Encrypt-Then-Sign+Compress (3.3KB)
-- **Average Compression**: 62.7% size reduction
-
-
-### 100KB Payload (88.9KB actual)
-
-| Mode | Encrypt/Sign | Decrypt/Verify | Total Time | Output Size | Size Change | Compressed |
-|------|-------------|----------------|-----------|-------------|-------------|------------|
-| Sign-Only | 2.13ms | 1.15ms | **3.28ms** | 89.4KB | +0.5% | ❌ |
-| Encrypt-Then-Sign | 2.34ms | 2.38ms | **4.72ms** | 119.8KB | +34.7% | ❌ |
-| Encrypt-Then-Sign+Compress | 24.01ms | 2.12ms | **26.12ms** | 6.7KB | -92.5% | ✅ |
-| Sign-Then-Encrypt | 1.80ms | 1.80ms | **3.60ms** | 119.8KB | +34.7% | ❌ |
-| Sign-Then-Encrypt+Compress | 10.73ms | 2.39ms | **13.12ms** | 6.7KB | -92.5% | ✅ |
-
-#### Analysis for 100KB
-
-- **Fastest Option**: Sign-Only (3.28ms total)
-- **Smallest Token**: Encrypt-Then-Sign+Compress (6.7KB)
-- **Average Compression**: 92.5% size reduction
-
-
-## Compression Analysis
-
-| Payload Size | Original | Compressed | Uncompressed | Compression Ratio | CPU Overhead |
-|-------------|----------|------------|--------------|-------------------|--------------|
-| 100B | 269B | 1.6KB | 1.6KB | **-4.1%** | +4.2ms |
-| 1KB | 927B | 2.0KB | 2.4KB | **16.0%** | +1.9ms |
-| 10KB | 9.0KB | 3.3KB | 13.2KB | **74.6%** | +4.1ms |
-| 100KB | 88.9KB | 6.7KB | 119.8KB | **94.4%** | +15.3ms |
-
-### Compression ROI Analysis
-
-The table above demonstrates the return on investment for compression:
-
-- **Small payloads** show minimal compression benefits due to overhead
-- **Medium payloads (10KB)** show significant compression with acceptable CPU overhead
-- **Large payloads (100KB)** show exceptional compression ratios with modest relative CPU overhead
-
-**Recommendation**: Enable compression for payloads >5KB for optimal performance/bandwidth balance.
-
-## Performance Recommendations
-
-### For Different Use Cases
-
-#### 🚀 **High Performance, Low Security Requirements**
-- **Use**: Sign-Only mode
-- **Benefits**: Fastest processing (~1-3ms)
-- **Trade-offs**: No encryption, data visible
-- **Best for**: Internal systems, public data
-
-#### ⚖️ **Balanced Performance & Security** 
-- **Use**: Encrypt-Then-Sign (no compression for <10KB)
-- **Benefits**: Good security, reasonable performance
-- **Trade-offs**: Moderate overhead
-- **Best for**: Most web applications
-
-#### 🔒 **Maximum Security & Bandwidth Efficiency**
-- **Use**: Encrypt-Then-Sign + Compression
-- **Benefits**: Best security, smallest tokens
-- **Trade-offs**: Higher CPU cost for compression
-- **Best for**: Large payloads, mobile apps, expensive bandwidth
-
-#### 🌐 **Legacy Compatibility**
-- **Use**: Sign-Then-Encrypt
-- **Benefits**: Traditional approach, widely supported
-- **Trade-offs**: Slightly slower than encrypt-then-sign
-- **Best for**: Standards compliance requirements
-
-### Performance Optimization Tips
-
-1. **Enable compression for payloads >10KB** - The bandwidth savings far outweigh CPU overhead
-2. **Use encrypt-then-sign** for new applications - Better security properties and performance
-3. **Consider caching** encrypted tokens when possible to amortize encryption costs
-4. **Monitor token sizes** in production to validate compression effectiveness
-5. **Benchmark with your actual payload patterns** - Results may vary with different data structures
-
-## Benchmark Methodology
-
-### Test Setup
-- **Payload Generation**: Realistic shopping cart data with items, metadata, and totals
-- **Timing**: High-precision performance.now() measurements
-- **Iterations**: Single-run measurements (consistent results observed)
-- **Key Generation**: Fresh RSA key pairs for each test run
-
-### Payload Characteristics
-- **100B**: Minimal cart with basic item data
-- **1KB**: Small cart with 1-3 items and metadata
-- **10KB**: Medium cart with 10-20 items and detailed attributes
-- **100KB**: Large cart with 100+ items, descriptions, and rich metadata
-
-### Metrics Collected
-- **Encryption/Signing Time**: Time to create secured token
-- **Decryption/Verification Time**: Time to recover original data
-- **Output Size**: Final token size in bytes
-- **Compression Ratio**: Percentage size reduction (negative = size increase)
-
-## Running Performance Tests
-
-To generate an updated version of this report:
-
-```bash
-npm run test:performance:report
 ```
 
-## Version History
+==================================================================================================================================
+PERFORMANCE TEST SUMMARY
+==================================================================================================================================
+Operation      | Mode                      | Size     | Original | Processed | Ratio  |     Time | Method
+----------------------------------------------------------------------------------------------------------------------------------
 
-- **v0.1.8** (2025-08-29): Added Brotli compression support and comprehensive performance analysis
+--- ~100B Payload Results ---
+Sign           | Sign-Only                 | ~100B    |     810B |    1.3KB |  -61.7% |     1.27ms | N/A
+Verify         | Sign-Only                 | ~100B    |    1.3KB |     810B |     N/A |     1.08ms | N/A
+Encrypt+Sign   | Encrypt-Then-Sign (none)  | ~100B    |     810B |    2.3KB | -185.9% |     1.03ms | none
+Verify+Decrypt | Encrypt-Then-Sign (none)  | ~100B    |    2.3KB |     889B |     N/A |     1.19ms | none
+Encrypt+Sign   | Encrypt-Then-Sign (gzip)  | ~100B    |     810B |    2.2KB | -179.0% |     2.40ms | gzip
+Verify+Decrypt | Encrypt-Then-Sign (gzip)  | ~100B    |    2.2KB |     810B |     N/A |     1.13ms | gzip
+Encrypt+Sign   | Encrypt-Then-Sign (brotli) | ~100B    |     810B |    2.1KB | -168.2% |   107.32ms | brotli
+Verify+Decrypt | Encrypt-Then-Sign (brotli) | ~100B    |    2.1KB |     810B |     N/A |     2.19ms | brotli
+Sign+Encrypt   | Sign-Then-Encrypt (none)  | ~100B    |     810B |    2.3KB | -189.8% |     1.48ms | none
+Decrypt+Verify | Sign-Then-Encrypt (none)  | ~100B    |    2.3KB |     810B |     N/A |     0.85ms | none
+Sign+Encrypt   | Sign-Then-Encrypt (gzip)  | ~100B    |     810B |    2.3KB | -189.0% |     3.39ms | gzip
+Decrypt+Verify | Sign-Then-Encrypt (gzip)  | ~100B    |    2.3KB |     810B |     N/A |     1.91ms | gzip
+Sign+Encrypt   | Sign-Then-Encrypt (brotli) | ~100B    |     810B |    2.3KB | -189.3% |     6.19ms | brotli
+Decrypt+Verify | Sign-Then-Encrypt (brotli) | ~100B    |    2.3KB |     810B |     N/A |     3.76ms | brotli
+
+--- ~1KB Payload Results ---
+Sign           | Sign-Only                 | ~1KB     |    1.3KB |    1.7KB |  -38.9% |     1.11ms | N/A
+Verify         | Sign-Only                 | ~1KB     |    1.7KB |    1.3KB |     N/A |     0.18ms | N/A
+Encrypt+Sign   | Encrypt-Then-Sign (none)  | ~1KB     |    1.3KB |    2.9KB | -129.4% |     3.75ms | none
+Verify+Decrypt | Encrypt-Then-Sign (none)  | ~1KB     |    2.9KB |    1.3KB |     N/A |    11.69ms | none
+Encrypt+Sign   | Encrypt-Then-Sign (gzip)  | ~1KB     |    1.3KB |    2.3KB |  -80.7% |     8.92ms | gzip
+Verify+Decrypt | Encrypt-Then-Sign (gzip)  | ~1KB     |    2.3KB |    1.3KB |     N/A |     2.97ms | gzip
+Encrypt+Sign   | Encrypt-Then-Sign (brotli) | ~1KB     |    1.3KB |    2.2KB |  -73.4% |     5.42ms | brotli
+Verify+Decrypt | Encrypt-Then-Sign (brotli) | ~1KB     |    2.2KB |    1.3KB |     N/A |     5.62ms | brotli
+Sign+Encrypt   | Sign-Then-Encrypt (none)  | ~1KB     |    1.3KB |    2.9KB | -131.8% |     1.51ms | none
+Decrypt+Verify | Sign-Then-Encrypt (none)  | ~1KB     |    2.9KB |    1.3KB |     N/A |     1.40ms | none
+Sign+Encrypt   | Sign-Then-Encrypt (gzip)  | ~1KB     |    1.3KB |    2.4KB |  -87.3% |     1.16ms | gzip
+Decrypt+Verify | Sign-Then-Encrypt (gzip)  | ~1KB     |    2.4KB |    1.3KB |     N/A |     0.92ms | gzip
+Sign+Encrypt   | Sign-Then-Encrypt (brotli) | ~1KB     |    1.3KB |    2.4KB |  -87.5% |     2.26ms | brotli
+Decrypt+Verify | Sign-Then-Encrypt (brotli) | ~1KB     |    2.4KB |    1.3KB |     N/A |     1.26ms | brotli
+
+--- ~10KB Payload Results ---
+Sign           | Sign-Only                 | ~10KB    |    8.2KB |    8.7KB |   -5.9% |     0.82ms | N/A
+Verify         | Sign-Only                 | ~10KB    |    8.7KB |    8.2KB |     N/A |     0.34ms | N/A
+Encrypt+Sign   | Encrypt-Then-Sign (none)  | ~10KB    |    8.2KB |   12.2KB |  -48.0% |     1.39ms | none
+Verify+Decrypt | Encrypt-Then-Sign (none)  | ~10KB    |   12.2KB |    8.3KB |     N/A |     8.54ms | none
+Encrypt+Sign   | Encrypt-Then-Sign (gzip)  | ~10KB    |    8.2KB |    2.7KB |  +66.8% |     2.14ms | gzip
+Verify+Decrypt | Encrypt-Then-Sign (gzip)  | ~10KB    |    2.7KB |    8.2KB |     N/A |     1.36ms | gzip
+Encrypt+Sign   | Encrypt-Then-Sign (brotli) | ~10KB    |    8.2KB |    2.5KB |  +69.1% |     5.39ms | brotli
+Verify+Decrypt | Encrypt-Then-Sign (brotli) | ~10KB    |    2.5KB |    8.2KB |     N/A |     2.06ms | brotli
+Sign+Encrypt   | Sign-Then-Encrypt (none)  | ~10KB    |    8.2KB |   12.2KB |  -48.3% |     0.95ms | none
+Decrypt+Verify | Sign-Then-Encrypt (none)  | ~10KB    |   12.2KB |    8.2KB |     N/A |     0.86ms | none
+Sign+Encrypt   | Sign-Then-Encrypt (gzip)  | ~10KB    |    8.2KB |    2.8KB |  +66.0% |     1.40ms | gzip
+Decrypt+Verify | Sign-Then-Encrypt (gzip)  | ~10KB    |    2.8KB |    8.2KB |     N/A |     1.09ms | gzip
+Sign+Encrypt   | Sign-Then-Encrypt (brotli) | ~10KB    |    8.2KB |    2.7KB |  +67.2% |     3.60ms | brotli
+Decrypt+Verify | Sign-Then-Encrypt (brotli) | ~10KB    |    2.7KB |    8.2KB |     N/A |     1.57ms | brotli
+
+--- ~100KB Payload Results ---
+Sign           | Sign-Only                 | ~100KB   |   79.0KB |   79.4KB |   -0.6% |     2.37ms | N/A
+Verify         | Sign-Only                 | ~100KB   |   79.4KB |   79.0KB |     N/A |     1.81ms | N/A
+Encrypt+Sign   | Encrypt-Then-Sign (none)  | ~100KB   |   79.0KB |  106.5KB |  -34.9% |     3.65ms | none
+Verify+Decrypt | Encrypt-Then-Sign (none)  | ~100KB   |  106.5KB |   79.0KB |     N/A |     3.17ms | none
+Encrypt+Sign   | Encrypt-Then-Sign (gzip)  | ~100KB   |   79.0KB |    7.0KB |  +91.1% |     3.97ms | gzip
+Verify+Decrypt | Encrypt-Then-Sign (gzip)  | ~100KB   |    7.0KB |   79.0KB |     N/A |     4.87ms | gzip
+Encrypt+Sign   | Encrypt-Then-Sign (brotli) | ~100KB   |   79.0KB |    5.8KB |  +92.7% |    25.68ms | brotli
+Verify+Decrypt | Encrypt-Then-Sign (brotli) | ~100KB   |    5.8KB |   79.0KB |     N/A |     6.30ms | brotli
+Sign+Encrypt   | Sign-Then-Encrypt (none)  | ~100KB   |   79.0KB |  106.5KB |  -34.9% |     2.45ms | none
+Decrypt+Verify | Sign-Then-Encrypt (none)  | ~100KB   |  106.5KB |   79.0KB |     N/A |     6.63ms | none
+Sign+Encrypt   | Sign-Then-Encrypt (gzip)  | ~100KB   |   79.0KB |    7.0KB |  +91.1% |     5.27ms | gzip
+Decrypt+Verify | Sign-Then-Encrypt (gzip)  | ~100KB   |    7.0KB |   79.0KB |     N/A |     2.71ms | gzip
+Sign+Encrypt   | Sign-Then-Encrypt (brotli) | ~100KB   |   79.0KB |    5.9KB |  +92.6% |    17.95ms | brotli
+Decrypt+Verify | Sign-Then-Encrypt (brotli) | ~100KB   |    5.9KB |   79.0KB |     N/A |     3.95ms | brotli
+
+==================================================================================================================================
+COMPRESSION METHOD COMPARISON
+==================================================================================================================================
+
+~100B Payload Compression Analysis:
+--------------------------------------------------
+  none    | Compression: -187.8% | Avg Time: 1.25ms | Avg Size: 2.3KB
+  gzip    | Compression: -184.0% | Avg Time: 2.90ms | Avg Size: 2.2KB
+  brotli  | Compression: -178.7% | Avg Time: 56.75ms | Avg Size: 2.2KB
+
+~1KB Payload Compression Analysis:
+--------------------------------------------------
+  none    | Compression: -130.6% | Avg Time: 2.63ms | Avg Size: 2.9KB
+  gzip    | Compression: -84.0% | Avg Time: 5.04ms | Avg Size: 2.3KB
+  brotli  | Compression: -80.5% | Avg Time: 3.84ms | Avg Size: 2.3KB
+
+~10KB Payload Compression Analysis:
+--------------------------------------------------
+  none    | Compression: -48.2% | Avg Time: 1.17ms | Avg Size: 12.2KB
+  gzip    | Compression: +66.4% | Avg Time: 1.77ms | Avg Size: 2.8KB
+  brotli  | Compression: +68.2% | Avg Time: 4.50ms | Avg Size: 2.6KB
+
+~100KB Payload Compression Analysis:
+--------------------------------------------------
+  none    | Compression: -34.9% | Avg Time: 3.05ms | Avg Size: 106.5KB
+  gzip    | Compression: +91.1% | Avg Time: 4.62ms | Avg Size: 7.0KB
+  brotli  | Compression: +92.6% | Avg Time: 21.81ms | Avg Size: 5.8KB
+
+==================================================================================================================================
+PERFORMANCE INSIGHTS
+==================================================================================================================================
+
+Overall Compression Method Performance:
+--------------------------------------------------
+• none   : Avg compression -100.4%, Avg time 2.03ms
+• gzip   : Avg compression -27.6%, Avg time 3.58ms
+• brotli : Avg compression -24.6%, Avg time 21.73ms
+
+Key Findings:
+• Larger payloads benefit more from compression
+• Brotli offers best compression ratio but with higher CPU cost
+• Gzip provides good balance between compression and speed
+• No compression (none) is fastest but produces largest tokens
+• Encrypt-then-sign typically offers better compression due to structure
+• Sign-only mode is fastest but offers no confidentiality
+==================================================================================================================================
+```
+
+## Recommendations
+
+1. **For maximum speed**: Use no compression (none)
+2. **For balanced performance**: Use gzip compression
+3. **For maximum compression**: Use brotli compression
+4. **For small payloads (<1KB)**: Compression overhead may not be worth it
+5. **For large payloads (>10KB)**: Compression significantly reduces token size
+
+## Test Methodology
+
+Tests were performed using:
+- Multiple payload sizes from ~100B to ~100KB
+- All three compression methods (none, gzip, brotli)
+- Three operation modes (Sign-Only, Encrypt-Then-Sign, Sign-Then-Encrypt)
+- Each test averaged over multiple runs for accuracy

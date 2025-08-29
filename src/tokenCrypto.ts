@@ -2,13 +2,17 @@ import * as jose from 'jose';
 import { JWK, KeyLike, JWTPayload } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyStore, KeyPair } from './jsonSignature';
-import * as brotli from 'brotli';
+import { 
+  compress as compressData, 
+  decompress as decompressData,
+  CompressionMethod 
+} from './utils/compression';
 
 export interface EncryptionOptions {
   audience?: string;
   expirationTime?: string;
   issuer?: string;
-  compress?: boolean;
+  compress?: boolean | CompressionMethod;  // Can be boolean, 'brotli', 'gzip', or 'none'
 }
 
 export default class TokenCrypto {
@@ -107,32 +111,44 @@ export default class TokenCrypto {
       };
 
       // Apply compression if enabled
-      if (options.compress !== false) {
-        // Default to true
+      if (options.compress !== false && options.compress !== 'none') {
+        // Determine compression method
+        let compressionMethod: CompressionMethod = 'brotli'; // default
+        if (typeof options.compress === 'string') {
+          compressionMethod = options.compress as CompressionMethod;
+        } else if (options.compress === true) {
+          compressionMethod = 'brotli'; // default when true
+        }
+        
         const payloadString = JSON.stringify(payload);
         const payloadBuffer = Buffer.from(payloadString, 'utf8');
-        const compressOptions = {
-          mode: 1 as const, // 1 = text mode for JSON data
-          quality: 5 as const, // Maximum compression quality
-          lgwin: 20 as const, // Default window size
-        };
-        const compressed = brotli.compress(payloadBuffer, compressOptions);
         
-        if (compressed && compressed.length < payloadBuffer.length) {
-          processedPayload = {
-            _compressed: Buffer.from(compressed).toString('base64'),
-            _originalSize: payloadBuffer.length,
-            _compression: 'br',
-          };
-          this.log(
-            'Payload compressed:',
-            payloadBuffer.length,
-            '->',
-            compressed.length,
-            'bytes'
-          );
-        } else {
-          this.log('Compression skipped - no size benefit');
+        try {
+          const compressed = await compressData(payloadBuffer, {
+            method: compressionMethod,
+            mode: 1, // 1 = text mode for JSON data
+            quality: compressionMethod === 'brotli' ? 4 : 6, // Optimized quality for each method
+            lgwin: 22 // Window size for brotli
+          });
+          
+          if (compressed && compressed.length < payloadBuffer.length) {
+            processedPayload = {
+              _compressed: Buffer.from(compressed).toString('base64'),
+              _originalSize: payloadBuffer.length,
+              _compression: compressionMethod === 'brotli' ? 'br' : compressionMethod,
+            };
+            this.log(
+              `Payload compressed (${compressionMethod}):`,
+              payloadBuffer.length,
+              '->',
+              compressed.length,
+              'bytes'
+            );
+          } else {
+            this.log('Compression skipped - no size benefit');
+          }
+        } catch (compressionError) {
+          this.log('Compression failed, using uncompressed:', compressionError);
         }
       }
 
@@ -193,12 +209,19 @@ export default class TokenCrypto {
       this.log('Protected header:', protectedHeader);
 
       // Handle decompression if compressed
-      if (payload._compression === 'br' && payload._compressed) {
+      if (payload._compressed && payload._compression) {
+        const compressionType = payload._compression as string;
         const compressedBuffer = Buffer.from(
           payload._compressed as string,
           'base64'
         );
-        const decompressed = brotli.decompress(compressedBuffer);
+        
+        // Determine decompression method
+        const method: CompressionMethod = compressionType === 'br' ? 'brotli' : 
+                                          compressionType === 'gzip' ? 'gzip' : 
+                                          'none';
+        
+        const decompressed = await decompressData(compressedBuffer, method);
 
         if (!decompressed) {
           throw new Error('Failed to decompress payload');

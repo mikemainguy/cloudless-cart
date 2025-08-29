@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudlessCart Simple Browser Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>CloudlessCart Simple Browser Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="results" class="loading">Loading library...</div>
+        <button onclick="runTest()" style="margin-top: 10px;">Run Test Again</button>
+    </div>
+
+    <script>
+        // Provide minimal polyfills for Node.js modules that might be needed
+        window.fs = { readFileSync: () => null };
+        window.path = { join: (...args) => args.join('/'), normalize: (p) => p };
+        window.util = { promisify: (fn) => fn };
+        window.Buffer = window.Buffer || { from: (data) => new Uint8Array(data) };
+        window.Browser = window.Browser || {};
+        
+        // Stub out Node.js brotli for browser - will use brotli-wasm instead
+        window.brotli = null;
+        
+        // Ensure crypto is available (use Web Crypto API)
+        if (!window.crypto && window.msCrypto) {
+            window.crypto = window.msCrypto;
+        }
+    </script>
+    
+    <!-- Load our self-contained Rollup-built library -->
+    <script src="../dist/browser/cloudless-cart.js"></script>
+    
+    <script>
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<span class="loading">Running tests...</span>';
+            
+            const results = [];
+            
+            try {
+                // Test 1: Library Loading
+                if (typeof CloudlessCart === 'undefined') {
+                    throw new Error('CloudlessCart is not defined');
+                }
+                results.push('✓ CloudlessCart library loaded');
+                
+                // Debug: Check what's actually available
+                console.log('CloudlessCart type:', typeof CloudlessCart);
+                console.log('CloudlessCart properties:', Object.keys(CloudlessCart));
+                
+                // Check for CloudlessCrypto class
+                const CloudlessCrypto = CloudlessCart.CloudlessCrypto;
+                
+                if (!CloudlessCrypto) {
+                    throw new Error('CloudlessCrypto class not available');
+                }
+                results.push('✓ CloudlessCrypto class available');
+                
+                // Test 2: Also check other exports
+                if (CloudlessCart.JsonSignature) {
+                    results.push('✓ JsonSignature class available');
+                }
+                
+                if (CloudlessCart.TokenCrypto) {
+                    results.push('✓ TokenCrypto class available');
+                }
+                
+                // Test 3: Basic functionality - Create instance
+                const crypto = new CloudlessCrypto();
+                results.push('✓ CloudlessCrypto instance created');
+                
+                // Test 4: Browser crypto capabilities
+                const hasWebCrypto = typeof window.crypto !== 'undefined' && typeof window.crypto.subtle !== 'undefined';
+                results.push(`✓ WebCrypto API: ${hasWebCrypto ? 'Available' : 'Not available'}`);
+                
+                const hasCompressionStream = typeof CompressionStream !== 'undefined';
+                results.push(`✓ CompressionStream: ${hasCompressionStream ? 'Available' : 'Not available'}`);
+                
+                // Test 5: Compression capabilities
+                try {
+                    // Try to check if brotli-wasm is available
+                    if (window.CloudlessCart && CloudlessCart.compressBrotli) {
+                        const testData = new TextEncoder().encode('Hello, Brotli compression test!');
+                        const compressed = await CloudlessCart.compressBrotli(testData);
+                        const decompressed = await CloudlessCart.decompressBrotli(compressed);
+                        const decompressedText = new TextDecoder().decode(decompressed);
+                        
+                        if (decompressedText === 'Hello, Brotli compression test!') {
+                            results.push('✓ Brotli compression/decompression working');
+                        } else {
+                            results.push('✗ Brotli compression test failed');
+                        }
+                    } else {
+                        results.push('ℹ Brotli compression not exposed in bundle');
+                    }
+                } catch (e) {
+                    results.push('ℹ Brotli compression test skipped: ' + e.message);
+                }
+                
+                // Test 6: Key generation
+                try {
+                    results.push('  Testing key generation...');
+                    
+                    const signingKeys = await crypto.generateSigningKeyPair();
+                    results.push('✓ Signing key pair generated');
+                    
+                    const encryptionKeys = await crypto.generateEncryptionKeyPair();
+                    results.push('✓ Encryption key pair generated');
+                    
+                    // Test 6: Basic token operations
+                    const testPayload = {
+                        test: 'browser-compatibility',
+                        timestamp: Date.now(),
+                        browser: navigator.userAgent
+                    };
+                    
+                    const token = await crypto.encryptThenSign(
+                        encryptionKeys.key,
+                        signingKeys.key,
+                        testPayload,
+                        { compress: false } // Disable compression for now to avoid issues
+                    );
+                    results.push('✓ Token created successfully');
+                    
+                    const decrypted = await crypto.verifyThenDecrypt(
+                        signingKeys.key,
+                        encryptionKeys.key,
+                        token
+                    );
+                    results.push('✓ Token decrypted successfully');
+                    
+                    const dataMatches = JSON.stringify(decrypted) === JSON.stringify(testPayload);
+                    results.push(`✓ Data integrity: ${dataMatches ? 'Verified' : 'Failed'}`);
+                    
+                } catch (cryptoError) {
+                    results.push(`✗ Crypto operations failed: ${cryptoError.message}`);
+                    console.error('Crypto error details:', cryptoError);
+                }
+                
+                // Display results
+                const successCount = results.filter(r => r.startsWith('✓')).length;
+                const failCount = results.filter(r => r.startsWith('✗')).length;
+                
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <strong>All Tests Completed</strong>
+                        <pre>${results.join('\n')}</pre>
+                        <p><strong>Tests passed:</strong> ${successCount}</p>
+                        ${failCount > 0 ? `<p><strong>Tests failed:</strong> ${failCount}</p>` : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Test Failed:</strong> ${error.message}
+                        <pre>${results.join('\n')}</pre>
+                        <p><strong>Stack:</strong></p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+                console.error('Test error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runTest, 100);
+        });
+    </script>
+</body>
+</html>

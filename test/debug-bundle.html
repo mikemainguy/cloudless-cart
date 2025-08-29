@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug CloudlessCart Bundle</title>
+</head>
+<body>
+    <h1>Debug CloudlessCart Bundle</h1>
+    <pre id="output"></pre>
+
+    <!-- Load dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/jose@5.9.6/dist/browser/index.js" type="module"></script>
+    <script src="https://unpkg.com/uuid@10.0.0/dist/umd/uuid.min.js"></script>
+    
+    <script type="module">
+        import * as joseModule from 'https://cdn.jsdelivr.net/npm/jose@5.9.6/dist/browser/index.js';
+        window.jose = joseModule;
+    </script>
+    
+    <script>
+        // Provide polyfills
+        window.fs = { readFileSync: () => null };
+        window.path = { join: (...args) => args.join('/'), normalize: (p) => p };
+        window.util = { promisify: (fn) => fn };
+        window.Buffer = window.Buffer || { from: (data) => new Uint8Array(data) };
+    </script>
+    
+    <!-- Load CloudlessCart -->
+    <script src="../dist/browser/cloudless-cart.js"></script>
+    
+    <script>
+        setTimeout(() => {
+            const output = document.getElementById('output');
+            let report = [];
+            
+            // Check what's available
+            report.push('=== CloudlessCart Bundle Debug ===\n');
+            report.push(`typeof CloudlessCart: ${typeof CloudlessCart}`);
+            report.push(`CloudlessCart object keys: ${CloudlessCart ? Object.keys(CloudlessCart).join(', ') : 'N/A'}`);
+            
+            if (CloudlessCart) {
+                report.push('\n=== Direct Properties ===');
+                for (let key in CloudlessCart) {
+                    report.push(`CloudlessCart.${key}: ${typeof CloudlessCart[key]}`);
+                }
+                
+                report.push('\n=== Default Export ===');
+                if (CloudlessCart.default) {
+                    report.push(`CloudlessCart.default keys: ${Object.keys(CloudlessCart.default).join(', ')}`);
+                    for (let key in CloudlessCart.default) {
+                        report.push(`CloudlessCart.default.${key}: ${typeof CloudlessCart.default[key]}`);
+                    }
+                }
+                
+                report.push('\n=== Testing Access Patterns ===');
+                report.push(`CloudlessCart.CloudlessCrypto: ${typeof CloudlessCart.CloudlessCrypto}`);
+                report.push(`CloudlessCart.default?.CloudlessCrypto: ${typeof CloudlessCart.default?.CloudlessCrypto}`);
+            }
+            
+            output.textContent = report.join('\n');
+        }, 1000);
+    </script>
+</body>
+</html>

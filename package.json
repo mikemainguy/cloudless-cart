@@ -1,20 +1,25 @@
 {
   "name": "cloudless-cart",
-  "version": "0.1.8",
+  "version": "0.2.1",
   "description": "simple module to create distributed secure shopping carts",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "browser": "./dist/browser/cloudless-cart.js",
   "files": [
     "./dist/**/*"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "npm run build:node && npm run build:browser",
+    "build:node": "tsc --project tsconfig.build.json",
+    "build:browser": "rollup -c && cp node_modules/brotli-wasm/pkg.web/brotli_wasm_bg.wasm dist/browser/ 2>/dev/null || true",
     "prepublish": "npm run build",
     "clean": "rm -rf ./dist/",
     "cm": "cz",
     "lint": "eslint ./src/ --fix",
     "test:watch": "jest --watch",
     "test": "jest --coverage",
+    "test:browser": "jest --testPathPattern=browser --verbose --no-coverage --silent=false",
+    "serve": "python3 -m http.server 8000",
     "test:performance": "jest --testPathPattern=performance-simple --verbose --no-coverage --silent=false",
     "test:performance:report": "jest --testPathPattern=performance-markdown --verbose --no-coverage --silent=false",
     "typecheck": "tsc --noEmit"
@@ -42,20 +47,29 @@
   },
   "homepage": "https://github.com/mikemainguy/cloudless-cart#readme",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
     "@types/brotli": "^1.3.4",
     "@types/jest": "^29.5.13",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
+    "buffer": "^6.0.3",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
     "husky": "^6.0.0",
     "jest": "^29.5.0",
+    "jest-environment-node": "^29.5.0",
     "lint-staged": "^13.2.1",
     "prettier": "^2.2.1",
+    "puppeteer": "^22.0.0",
+    "rollup": "^2.79.2",
+    "rollup-plugin-terser": "^7.0.2",
     "ts-jest": "^29.2.5",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "util": "^0.12.5"
   },
   "lint-staged": {
     "*.ts": "eslint --cache --cache-location .eslintcache --fix"
@@ -68,5 +82,8 @@
     "jose": "^5.9.6",
     "ts-node": "^10.9.2",
     "uuid": "^10.0.0"
+  },
+  "optionalDependencies": {
+    "brotli-wasm": "^1.1.0"
   }
 }
