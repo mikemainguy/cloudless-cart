@@ -337,6 +337,220 @@ const verifiedCustomer = await crypto.verifyThenDecrypt(
 );
 ```
 
+## Public Key Verification
+
+One of the key benefits of this cryptographic approach is that **signature verification only requires the public key**, not the private key. This enables secure, distributed verification without sharing sensitive key material.
+
+### How Public Key Verification Works
+
+```typescript
+import { CloudlessCrypto } from 'cloudless-cart';
+
+// === SERVICE A: Cart Creation (has private key) ===
+const cartService = new CloudlessCrypto();
+const keyPair = await cartService.generateSigningKeyPair();
+const privateKeyId = keyPair.key;
+const publicKeyJWK = keyPair.publicKey;
+
+// Cart service signs the cart with private key
+const cartData = { userId: 'user123', items: ['book'], total: 19.99 };
+const signedCart = await cartService.signObject(privateKeyId, cartData);
+
+console.log('Signed cart from service A:', signedCart);
+
+// === SERVICE B: Verification (only has public key) ===
+const verificationService = new CloudlessCrypto();
+
+// Import ONLY the public key (private key never shared)
+await verificationService.signer.setPublicKey('public-key-id', publicKeyJWK);
+
+// Service B can verify the cart was signed by Service A
+const verifiedCart = await verificationService.verifyObject(signedCart, 'public-key-id');
+console.log('Verified cart in service B:', verifiedCart);
+
+// ✅ Verification succeeds - Service B knows the cart is authentic
+// ❌ Service B cannot create new signed carts (no private key)
+```
+
+### Encrypt-then-Sign with Public Key Distribution
+
+```typescript
+// === CART SERVICE: Creates and signs carts ===
+const cartService = new CloudlessCrypto();
+const signingKeys = await cartService.generateSigningKeyPair();
+const encryptionKeys = await cartService.generateEncryptionKeyPair();
+
+const cartData = {
+  userId: 'customer123',
+  items: [{ name: 'Premium Widget', price: 99.99 }],
+  creditCard: '****-****-****-1234' // Sensitive data
+};
+
+// Create encrypted and signed token
+const secureToken = await cartService.encryptThenSign(
+  encryptionKeys.key,
+  signingKeys.key,
+  cartData
+);
+
+// === PAYMENT SERVICE: Verifies carts (public keys only) ===
+const paymentService = new CloudlessCrypto();
+
+// Payment service receives public keys from cart service
+await paymentService.signer.setPublicKey(
+  'cart-service-public-key',
+  signingKeys.publicKey
+);
+
+// Payment service can verify the token came from cart service
+try {
+  // First verify signature (public key verification)
+  const signatureValid = await paymentService.signer.verify(
+    secureToken,
+    'cart-service-public-key'
+  );
+  console.log('✅ Signature verified - cart is from trusted cart service');
+  
+  // Payment service would need the encryption private key to decrypt
+  // (This would be shared securely between cart and payment services)
+  
+} catch (error) {
+  console.log('❌ Signature verification failed - untrusted source');
+}
+```
+
+### Key Distribution Patterns
+
+#### Pattern 1: Public Key Registry
+```typescript
+// Public key server/registry that all services can access
+class PublicKeyRegistry {
+  private keys = new Map<string, any>();
+  
+  async registerPublicKey(serviceId: string, publicKey: any) {
+    this.keys.set(serviceId, publicKey);
+    console.log(`✅ Public key registered for ${serviceId}`);
+  }
+  
+  async getPublicKey(serviceId: string) {
+    const key = this.keys.get(serviceId);
+    if (!key) throw new Error(`No public key found for ${serviceId}`);
+    return key;
+  }
+}
+
+// Usage across services
+const keyRegistry = new PublicKeyRegistry();
+
+// Cart service registers its public key
+const cartService = new CloudlessCrypto();
+const cartKeys = await cartService.generateSigningKeyPair();
+await keyRegistry.registerPublicKey('cart-service', cartKeys.publicKey);
+
+// Other services can fetch and use the public key
+const orderService = new CloudlessCrypto();
+const cartPublicKey = await keyRegistry.getPublicKey('cart-service');
+await orderService.signer.setPublicKey('cart-service', cartPublicKey);
+
+// Now order service can verify carts from cart service
+const verifiedCart = await orderService.verifyObject(signedCart, 'cart-service');
+```
+
+#### Pattern 2: JWT with Public Key URLs
+```typescript
+// Include public key URL in JWT header for key discovery
+const cartData = { userId: 'user123', total: 50.00 };
+
+// Custom header with public key location
+const signedWithKeyUrl = await cartService.signer.sign(cartKeys.key, cartData);
+signedWithKeyUrl.header = {
+  ...signedWithKeyUrl.header,
+  jku: 'https://cart-service.com/.well-known/jwks.json', // Public key URL
+  kid: cartKeys.key // Key ID
+};
+
+// Verification service can fetch public key from URL
+const publicKeyUrl = signedWithKeyUrl.header.jku;
+const keyId = signedWithKeyUrl.header.kid;
+
+// Fetch public key from the URL (in real implementation)
+const publicKey = await fetchPublicKeyFromUrl(publicKeyUrl, keyId);
+await verificationService.signer.setPublicKey(keyId, publicKey);
+
+const verified = await verificationService.verifyObject(signedWithKeyUrl, keyId);
+```
+
+### Multi-Service Architecture Example
+
+```typescript
+// === MICROSERVICES WITH PUBLIC KEY VERIFICATION ===
+
+// Service 1: User Service (creates user tokens)
+const userService = new CloudlessCrypto();
+const userSigningKeys = await userService.generateSigningKeyPair();
+
+const userToken = await userService.signObject(userSigningKeys.key, {
+  userId: 'user123',
+  permissions: ['read-cart', 'modify-cart'],
+  expires: Date.now() + (60 * 60 * 1000) // 1 hour
+});
+
+// Service 2: Cart Service (verifies user tokens, creates cart tokens)
+const cartService = new CloudlessCrypto();
+const cartSigningKeys = await cartService.generateSigningKeyPair();
+
+// Cart service has user service's public key
+await cartService.signer.setPublicKey('user-service', userSigningKeys.publicKey);
+
+// Verify user token (no private key needed)
+const verifiedUser = await cartService.verifyObject(userToken, 'user-service');
+console.log('✅ User verified:', verifiedUser.userId);
+
+// Create cart token
+const cartToken = await cartService.signObject(cartSigningKeys.key, {
+  userId: verifiedUser.userId,
+  cartId: 'cart-456',
+  items: [{ name: 'widget', price: 25.00 }]
+});
+
+// Service 3: Payment Service (verifies cart tokens)
+const paymentService = new CloudlessCrypto();
+
+// Payment service has cart service's public key  
+await paymentService.signer.setPublicKey('cart-service', cartSigningKeys.publicKey);
+
+// Verify cart token
+const verifiedCart = await paymentService.verifyObject(cartToken, 'cart-service');
+console.log('✅ Cart verified for payment:', verifiedCart);
+
+// Each service only needs:
+// - Its own private key (for signing)
+// - Other services' public keys (for verification)
+// - Never shares private keys with other services
+```
+
+### Security Benefits of Public Key Verification
+
+1. **🔒 Private Key Isolation**
+   - Private keys never leave the signing service
+   - Compromise of verification service doesn't expose signing capability
+   - Each service only has the minimum keys needed
+
+2. **📈 Scalable Architecture**
+   - Multiple services can verify without coordination
+   - No need to share sensitive key material
+   - Easy to add new verification services
+
+3. **🛡️ Defense in Depth**
+   - Even if verification service is compromised, attacker cannot forge signatures
+   - Public key distribution can be monitored and audited
+   - Key rotation affects only the signing service
+
+4. **⚡ Performance Benefits**
+   - Verification services don't need secure key storage
+   - Public keys can be cached and distributed via CDN
+   - No secure communication needed for public key sharing
+
 ## Security Best Practices
 
 ### 1. Key Rotation
