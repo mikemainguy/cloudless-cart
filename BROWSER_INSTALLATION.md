@@ -18,6 +18,11 @@ The library automatically detects available compression methods and falls back g
 ```bash
 # Install without optional dependencies (skips brotli-wasm)
 npm install cloudless-cart --no-optional
+
+# On Mac with architecture conflicts, try:
+# npm run install:no-wasm
+# or if that fails:
+# yarn install --ignore-optional
 ```
 
 **Advantages:**

@@ -1,6 +1,6 @@
 {
   "name": "cloudless-cart",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "simple module to create distributed secure shopping carts",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -22,7 +22,9 @@
     "serve": "python3 -m http.server 8000",
     "test:performance": "jest --testPathPattern=performance-simple --verbose --no-coverage --silent=false",
     "test:performance:report": "jest --testPathPattern=performance-markdown --verbose --no-coverage --silent=false",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "install:no-wasm": "npm install --no-optional",
+    "install:browser-only": "npm install --no-optional"
   },
   "repository": {
     "type": "git",
@@ -83,7 +85,12 @@
     "jose": "^5.9.6",
     "uuid": "^10.0.0"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
     "brotli-wasm": "^1.1.0"
+  },
+  "peerDependenciesMeta": {
+    "brotli-wasm": {
+      "optional": true
+    }
   }
 }
