@@ -1,6 +1,6 @@
 {
   "name": "cloudless-cart",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "simple module to create distributed secure shopping carts",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

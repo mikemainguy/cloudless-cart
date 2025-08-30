@@ -55,3 +55,8 @@ export {
   default as CloudlessCrypto,
   EncryptThenSignPayload,
 } from './cloudlessCrypto';
+export { 
+  enableBrotliWasm,
+  getCompressionInfo,
+  getAvailableCompressionMethods 
+} from './utils/compression';

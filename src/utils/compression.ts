@@ -49,20 +49,35 @@ async function initNodeZlib() {
   return nodeZlib;
 }
 
+let wasmInitAttempted = false;
+
 /**
- * Initialize browser Brotli-WASM
+ * Initialize browser Brotli-WASM (only when explicitly enabled)
  */
-async function initBrowserBrotliWasm() {
-  if (!browserBrotliWasm && isBrowser) {
+async function initBrowserBrotliWasm(forceInit = false) {
+  if (!browserBrotliWasm && isBrowser && (forceInit || wasmInitAttempted)) {
     try {
       // @ts-ignore
       browserBrotliWasm = await import('brotli-wasm');
       return browserBrotliWasm;
     } catch (e) {
-      console.warn('brotli-wasm not available in browser');
+      if (forceInit) {
+        console.warn('brotli-wasm not available in browser. Install with: npm install brotli-wasm');
+      }
     }
   }
   return browserBrotliWasm;
+}
+
+/**
+ * Explicitly enable WASM support (requires user to install brotli-wasm)
+ */
+export async function enableBrotliWasm(): Promise<boolean> {
+  if (!isBrowser) return false;
+  
+  wasmInitAttempted = true;
+  const wasm = await initBrowserBrotliWasm(true);
+  return wasm !== null;
 }
 
 /**
@@ -330,12 +345,8 @@ export async function getAvailableCompressionMethods(): Promise<{
       gzip = nodeZlib !== null;
     } catch {}
   } else if (isBrowser) {
-    // Check browser compression
-    try {
-      await initBrowserBrotliWasm();
-      brotli = browserBrotliWasm !== null;
-    } catch {}
-    
+    // Check browser compression - only check WASM if explicitly enabled
+    brotli = wasmInitAttempted && browserBrotliWasm !== null;
     gzip = 'CompressionStream' in window;
   }
   
