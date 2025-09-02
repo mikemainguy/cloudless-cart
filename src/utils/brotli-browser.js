@@ -3,20 +3,40 @@
 
 // Check for brotli-wasm availability
 let brotliWasm = null;
+let wasmEnabled = false; // Opt-in flag for WASM
 
-// Initialize brotli-wasm if available
+// Initialize brotli-wasm only when explicitly enabled
 async function initBrotliWasm() {
+  if (!wasmEnabled) {
+    return false; // Don't load WASM unless explicitly enabled
+  }
+  
   if (!brotliWasm) {
     try {
-      // Dynamic import to avoid errors if not available
+      // Dynamic import only when opted in
       brotliWasm = await import('brotli-wasm');
-      await brotliWasm.init();
+      if (brotliWasm.init) {
+        await brotliWasm.init();
+      }
     } catch (error) {
       console.warn('brotli-wasm not available:', error.message);
       brotliWasm = false; // Mark as unavailable
     }
   }
   return brotliWasm;
+}
+
+// Enable WASM support (must be called explicitly)
+export async function enableBrotliWasm() {
+  wasmEnabled = true;
+  const result = await initBrotliWasm();
+  return result !== false;
+}
+
+// Disable WASM support
+export function disableBrotliWasm() {
+  wasmEnabled = false;
+  brotliWasm = null;
 }
 
 // Fallback compression using CompressionStream (Chrome 80+)
@@ -101,18 +121,20 @@ async function decompressWithStream(buffer, algorithm = 'gzip') {
   return result;
 }
 
-// Main compress function - tries brotli-wasm first, falls back to gzip
+// Main compress function - uses gzip by default, brotli only if enabled
 export async function compress(buffer, options = {}) {
   // Convert input to Uint8Array if needed
   const input = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   
-  // Try brotli-wasm first
-  const brotli = await initBrotliWasm();
-  if (brotli && brotli.compress) {
-    try {
-      return brotli.compress(input, options.quality || 5);
-    } catch (error) {
-      console.warn('brotli-wasm compression failed:', error.message);
+  // Only try brotli if WASM is explicitly enabled
+  if (wasmEnabled) {
+    const brotli = await initBrotliWasm();
+    if (brotli && brotli.compress) {
+      try {
+        return brotli.compress(input, options.quality || 5);
+      } catch (error) {
+        console.warn('brotli-wasm compression failed:', error.message);
+      }
     }
   }
   
@@ -130,18 +152,20 @@ export async function compress(buffer, options = {}) {
   return input;
 }
 
-// Main decompress function
+// Main decompress function - uses gzip by default, brotli only if enabled
 export async function decompress(buffer) {
   // Convert input to Uint8Array if needed
   const input = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   
-  // Try brotli-wasm first
-  const brotli = await initBrotliWasm();
-  if (brotli && brotli.decompress) {
-    try {
-      return brotli.decompress(input);
-    } catch (error) {
-      console.warn('brotli-wasm decompression failed:', error.message);
+  // Only try brotli if WASM is explicitly enabled
+  if (wasmEnabled) {
+    const brotli = await initBrotliWasm();
+    if (brotli && brotli.decompress) {
+      try {
+        return brotli.decompress(input);
+      } catch (error) {
+        console.warn('brotli-wasm decompression failed:', error.message);
+      }
     }
   }
   
@@ -162,5 +186,7 @@ export async function decompress(buffer) {
 // Export default object to match Node.js brotli module structure
 export default {
   compress,
-  decompress
+  decompress,
+  enableBrotliWasm,
+  disableBrotliWasm
 };
