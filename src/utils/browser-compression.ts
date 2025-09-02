@@ -27,6 +27,7 @@ async function initBrotliWasm() {
   initPromise = (async () => {
     try {
       // Dynamic import - only when opted in
+      // @ts-ignore - optional peer dependency
       const module = await import('brotli-wasm');
       brotliWasmModule = module;
       console.log('Brotli-wasm loaded successfully');
