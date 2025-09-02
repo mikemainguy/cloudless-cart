@@ -1,15 +1,21 @@
 /**
- * Browser-specific compression module using brotli-wasm
- * This provides Brotli compression/decompression in browsers
+ * Browser-specific compression module with optional brotli-wasm support
+ * By default uses native gzip compression to avoid WASM download overhead
+ * Call enableBrotliWasm() to opt-in to Brotli compression
  */
 
 let brotliWasmModule: any = null;
 let initPromise: Promise<void> | null = null;
+let wasmEnabled = false;
 
 /**
- * Initialize brotli-wasm module (lazy loading)
+ * Initialize brotli-wasm module (only when explicitly enabled)
  */
 async function initBrotliWasm() {
+  if (!wasmEnabled) {
+    return; // Don't load WASM unless explicitly enabled
+  }
+  
   if (initPromise) {
     return initPromise;
   }
@@ -20,14 +26,13 @@ async function initBrotliWasm() {
 
   initPromise = (async () => {
     try {
-      // Try to dynamically import brotli-wasm
+      // Dynamic import - only when opted in
       const module = await import('brotli-wasm');
-      // brotli-wasm exports compress and decompress directly
       brotliWasmModule = module;
       console.log('Brotli-wasm loaded successfully');
     } catch (error) {
       console.warn('Failed to load brotli-wasm:', error);
-      // Fallback will be handled by the compress/decompress functions
+      console.warn('Install with: npm install brotli-wasm');
     }
   })();
 
@@ -35,12 +40,34 @@ async function initBrotliWasm() {
 }
 
 /**
- * Compress data using Brotli in the browser
+ * Enable WASM-based Brotli compression
+ * Must be called before using Brotli compression
+ */
+export async function enableBrotliWasm(): Promise<boolean> {
+  wasmEnabled = true;
+  await initBrotliWasm();
+  return brotliWasmModule !== null;
+}
+
+/**
+ * Disable WASM and free resources
+ */
+export function disableBrotliWasm(): void {
+  wasmEnabled = false;
+  brotliWasmModule = null;
+  initPromise = null;
+}
+
+/**
+ * Compress data using Brotli in the browser (requires enableBrotliWasm())
+ * Falls back to gzip if WASM not enabled
  */
 export async function compressBrotli(data: Uint8Array): Promise<Uint8Array> {
-  await initBrotliWasm();
+  if (wasmEnabled) {
+    await initBrotliWasm();
+  }
   
-  if (brotliWasmModule && brotliWasmModule.compress) {
+  if (wasmEnabled && brotliWasmModule && brotliWasmModule.compress) {
     try {
       // Use brotli-wasm compress function
       return await brotliWasmModule.compress(data, {
@@ -90,12 +117,15 @@ export async function compressBrotli(data: Uint8Array): Promise<Uint8Array> {
 }
 
 /**
- * Decompress data using Brotli in the browser
+ * Decompress data using Brotli in the browser (requires enableBrotliWasm())
+ * Falls back to gzip if WASM not enabled
  */
 export async function decompressBrotli(data: Uint8Array): Promise<Uint8Array> {
-  await initBrotliWasm();
+  if (wasmEnabled) {
+    await initBrotliWasm();
+  }
   
-  if (brotliWasmModule && brotliWasmModule.decompress) {
+  if (wasmEnabled && brotliWasmModule && brotliWasmModule.decompress) {
     try {
       // Use brotli-wasm decompress function
       return await brotliWasmModule.decompress(data);
@@ -145,6 +175,9 @@ export async function decompressBrotli(data: Uint8Array): Promise<Uint8Array> {
  * Check if Brotli compression is available
  */
 export async function isBrotliAvailable(): Promise<boolean> {
+  if (!wasmEnabled) {
+    return false;
+  }
   await initBrotliWasm();
   return brotliWasmModule !== null;
 }
