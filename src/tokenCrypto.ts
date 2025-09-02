@@ -15,6 +15,16 @@ export interface EncryptionOptions {
   compress?: boolean | CompressionMethod;  // Can be boolean, 'brotli', 'gzip', or 'none'
 }
 
+/**
+ * ZIP header values according to RFC 7516 Section 4.1.3
+ * - "DEF": DEFLATE compression algorithm (standard)
+ * - "BR": Brotli compression algorithm (custom, could be registered in IANA registry)
+ * 
+ * The zip header parameter specifies the compression algorithm applied to the
+ * plaintext before encryption and MUST be integrity protected by appearing 
+ * only within the JWE Protected Header.
+ */
+
 export default class TokenCrypto {
   private readonly _keys: KeyStore;
   private debug = false;
@@ -104,13 +114,14 @@ export default class TokenCrypto {
 
     try {
       let processedPayload = payload;
-      const headers: Record<string, any> = {
+      const headers = {
         alg: keyPair.alg || 'RSA-OAEP-256',
-        enc: 'A256GCM',
+        enc: 'A256GCM' as const,
         kid: keyId,
+        zip: undefined as string | undefined,
       };
 
-      // Apply compression if enabled
+      // Apply compression and set zip header if enabled
       if (options.compress !== false && options.compress !== 'none') {
         // Determine compression method
         let compressionMethod: CompressionMethod = 'brotli'; // default
@@ -118,6 +129,24 @@ export default class TokenCrypto {
           compressionMethod = options.compress as CompressionMethod;
         } else if (options.compress === true) {
           compressionMethod = 'brotli'; // default when true
+        }
+        
+        // Set zip header according to RFC 7516 Section 4.1.3
+        // "DEF" is the standard value for DEFLATE compression
+        // For other algorithms, we use custom values that can be registered
+        switch (compressionMethod) {
+          case 'gzip':
+            // gzip uses DEFLATE internally, so we can use the standard "DEF" value
+            headers.zip = 'DEF';
+            break;
+          case 'brotli':
+            // Custom compression algorithm - could be registered in IANA registry
+            headers.zip = 'BR';
+            break;
+          default:
+            // For any other compression, use generic deflate
+            headers.zip = 'DEF';
+            break;
         }
         
         const payloadString = JSON.stringify(payload);
@@ -138,26 +167,36 @@ export default class TokenCrypto {
               _compression: compressionMethod === 'brotli' ? 'br' : compressionMethod,
             };
             this.log(
-              `Payload compressed (${compressionMethod}):`,
+              `Payload compressed (${compressionMethod}) with zip header "${headers.zip}":`,
               payloadBuffer.length,
               '->',
               compressed.length,
               'bytes'
             );
           } else {
-            this.log('Compression skipped - no size benefit');
+            this.log('Compression skipped - no size benefit, removing zip header');
+            headers.zip = undefined; // Remove zip header if compression wasn't beneficial
           }
         } catch (compressionError) {
-          this.log('Compression failed, using uncompressed:', compressionError);
+          this.log('Compression failed, using uncompressed, removing zip header:', compressionError);
+          headers.zip = undefined; // Remove zip header if compression failed
         }
       }
 
+      // Create protected header, only including defined values
+      const protectedHeader: any = {
+        alg: headers.alg,
+        enc: headers.enc,
+        kid: headers.kid,
+      };
+      
+      // Only include zip header if it's defined (RFC 7516 Section 4.1.3)
+      if (headers.zip) {
+        protectedHeader.zip = headers.zip;
+      }
+
       const jwt = new jose.EncryptJWT(processedPayload)
-        .setProtectedHeader({
-          alg: headers.alg,
-          enc: headers.enc,
-          kid: headers.kid,
-        })
+        .setProtectedHeader(protectedHeader)
         .setIssuedAt()
         .setJti(uuidv4())
         .setExpirationTime(options.expirationTime || '2h');
@@ -208,13 +247,32 @@ export default class TokenCrypto {
       );
       this.log('Protected header:', protectedHeader);
 
-      // Handle decompression if compressed
+      // Check zip header and handle decompression according to RFC 7516 Section 4.1.3
+      if (protectedHeader.zip) {
+        this.log(`Found zip header indicating compression: ${protectedHeader.zip}`);
+        
+        // Validate zip header value according to RFC 7516
+        const validZipValues = ['DEF', 'BR']; // DEF is standard, BR is our custom brotli
+        if (!validZipValues.includes(protectedHeader.zip)) {
+          this.log(`Warning: Unknown zip header value: ${protectedHeader.zip}`);
+        }
+      }
+      
+      // Handle decompression if compressed (existing logic)
       if (payload._compressed && payload._compression) {
         const compressionType = payload._compression as string;
         const compressedBuffer = Buffer.from(
           payload._compressed as string,
           'base64'
         );
+        
+        // Validate compression type matches zip header if present
+        if (protectedHeader.zip) {
+          const expectedZip = compressionType === 'br' ? 'BR' : 'DEF';
+          if (protectedHeader.zip !== expectedZip) {
+            this.log(`Warning: zip header "${protectedHeader.zip}" doesn't match compression type "${compressionType}"`);
+          }
+        }
         
         // Determine decompression method
         const method: CompressionMethod = compressionType === 'br' ? 'brotli' : 
@@ -234,13 +292,16 @@ export default class TokenCrypto {
         >;
 
         this.log(
-          'Payload decompressed:',
+          `Payload decompressed (zip: ${protectedHeader.zip || 'none'}):`,
           compressedBuffer.length,
           '->',
           decompressed.length,
           'bytes'
         );
         return originalPayload;
+      } else if (protectedHeader.zip) {
+        // If zip header is present but no compression data found, log warning
+        this.log(`Warning: zip header "${protectedHeader.zip}" present but no compressed data found`);
       }
 
       return payload;
