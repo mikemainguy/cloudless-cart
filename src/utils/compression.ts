@@ -61,7 +61,9 @@ async function initBrowserBrotliWasm() {
     try {
       // Dynamic import - only loaded when explicitly enabled
       // @ts-ignore
-      browserBrotliWasm = await import('brotli-wasm');
+      const brotliPromise = await import('brotli-wasm');
+      // brotli-wasm exports a promise that resolves to the actual module
+      browserBrotliWasm = await brotliPromise.default;
       return browserBrotliWasm;
     } catch (e) {
       console.warn('brotli-wasm not available. Install with: npm install brotli-wasm');
@@ -166,9 +168,8 @@ async function compressBrotliBrowser(data: Uint8Array, options: CompressionOptio
   const brotliWasm = await initBrowserBrotliWasm();
   if (!brotliWasm) throw new Error('Brotli-WASM not available in browser');
   
-  return await brotliWasm.compress(data, {
-    quality: options.quality ?? 4,
-    lgwin: options.lgwin ?? 22
+  return brotliWasm.compress(data, {
+    quality: options.quality ?? 4
   });
 }
 
@@ -179,7 +180,7 @@ async function decompressBrotliBrowser(data: Uint8Array): Promise<Uint8Array> {
   const brotliWasm = await initBrowserBrotliWasm();
   if (!brotliWasm) throw new Error('Brotli-WASM not available in browser');
   
-  return await brotliWasm.decompress(data);
+  return brotliWasm.decompress(data);
 }
 
 /**

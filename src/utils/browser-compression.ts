@@ -28,8 +28,9 @@ async function initBrotliWasm() {
     try {
       // Dynamic import - only when opted in
       // @ts-ignore - optional peer dependency
-      const module = await import('brotli-wasm');
-      brotliWasmModule = module;
+      const brotliPromise = await import('brotli-wasm');
+      // brotli-wasm exports a promise that resolves to the actual module
+      brotliWasmModule = await brotliPromise.default;
       console.log('Brotli-wasm loaded successfully');
     } catch (error) {
       console.warn('Failed to load brotli-wasm:', error);
@@ -71,9 +72,9 @@ export async function compressBrotli(data: Uint8Array): Promise<Uint8Array> {
   if (wasmEnabled && brotliWasmModule && brotliWasmModule.compress) {
     try {
       // Use brotli-wasm compress function
-      return await brotliWasmModule.compress(data, {
-        quality: 4,  // 0-11, 4 is a good balance
-        lgwin: 22    // Window size
+      // brotli-wasm compress API: compress(buffer, { quality: 1-11 })
+      return brotliWasmModule.compress(data, {
+        quality: 4  // 1-11, 4 is a good balance for speed/compression
       });
     } catch (error) {
       console.warn('Brotli compression failed:', error);
@@ -129,7 +130,7 @@ export async function decompressBrotli(data: Uint8Array): Promise<Uint8Array> {
   if (wasmEnabled && brotliWasmModule && brotliWasmModule.decompress) {
     try {
       // Use brotli-wasm decompress function
-      return await brotliWasmModule.decompress(data);
+      return brotliWasmModule.decompress(data);
     } catch (error) {
       console.warn('Brotli decompression failed:', error);
     }
