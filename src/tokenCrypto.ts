@@ -135,14 +135,11 @@ export default class TokenCrypto {
           compressionMethod = 'brotli'; // default when true
         }
         
-        // Set custom compression header that jose library will accept
-        // This allows clients to detect compression before decryption
-        headers['x-compression'] = compressionMethod;
-        
         const payloadString = JSON.stringify(payload);
         const payloadBuffer = Buffer.from(payloadString, 'utf8');
         
         try {
+          // Try compression with the requested method
           const compressed = await compressData(payloadBuffer, {
             method: compressionMethod,
             mode: 1, // 1 = text mode for JSON data
@@ -151,13 +148,20 @@ export default class TokenCrypto {
           });
           
           if (compressed && compressed.length < payloadBuffer.length) {
+            // Detect actual compression method used by examining the compressed data
+            let actualMethod = this.detectCompressionMethod(compressed, compressionMethod);
+            
             processedPayload = {
               _compressed: Buffer.from(compressed).toString('base64'),
               _originalSize: payloadBuffer.length,
-              _compression: compressionMethod === 'brotli' ? 'br' : compressionMethod,
+              _compression: actualMethod === 'brotli' ? 'br' : actualMethod,
             };
+            
+            // Set header to the ACTUAL method used, not the requested method
+            headers['x-compression'] = actualMethod;
+            
             this.log(
-              `Payload compressed (${compressionMethod}) with x-compression header:`,
+              `Payload compressed (requested: ${compressionMethod}, actual: ${actualMethod}) with x-compression header:`,
               payloadBuffer.length,
               '->',
               compressed.length,
@@ -339,6 +343,48 @@ export default class TokenCrypto {
 
   public hasKey(keyId: string): boolean {
     return this._keys.get(keyId) !== undefined;
+  }
+
+  /**
+   * Detect the actual compression method used by examining compressed data
+   * This is necessary because compression utilities may silently fall back to different methods
+   * 
+   * @private
+   * @param compressed The compressed data
+   * @param requested The compression method that was requested
+   * @returns The actual compression method detected
+   */
+  private detectCompressionMethod(compressed: Uint8Array, requested: CompressionMethod): CompressionMethod {
+    // Check for gzip magic bytes (1f 8b)
+    if (compressed.length >= 2 && compressed[0] === 0x1f && compressed[1] === 0x8b) {
+      if (requested !== 'gzip') {
+        this.log(`Detected fallback from ${requested} to gzip compression (magic bytes: 1f 8b)`);
+      }
+      return 'gzip';
+    }
+    
+    // Check for deflate/zlib wrapper (typically starts with 78)
+    // Note: Some gzip implementations might use deflate internally
+    if (compressed.length >= 1 && compressed[0] === 0x78) {
+      // Since our CompressionMethod doesn't include 'deflate', treat as gzip
+      if (requested !== 'gzip') {
+        this.log(`Detected deflate/zlib compression (magic byte: 78), treating as gzip fallback`);
+      }
+      return 'gzip';
+    }
+    
+    // For brotli, there's no standard magic number, but we can make reasonable assumptions
+    if (compressed.length >= 1) {
+      const firstByte = compressed[0];
+      
+      // If we requested brotli and don't see gzip magic bytes, assume it's brotli
+      if (requested === 'brotli' && firstByte !== 0x1f && firstByte !== 0x78) {
+        return 'brotli';
+      }
+    }
+    
+    // Default: return the requested method if we can't definitively detect otherwise
+    return requested;
   }
 
   /**
