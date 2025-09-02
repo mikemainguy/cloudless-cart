@@ -16,13 +16,17 @@ export interface EncryptionOptions {
 }
 
 /**
- * ZIP header values according to RFC 7516 Section 4.1.3
- * - "DEF": DEFLATE compression algorithm (standard)
- * - "BR": Brotli compression algorithm (custom, could be registered in IANA registry)
+ * Compression header implementation
  * 
- * The zip header parameter specifies the compression algorithm applied to the
- * plaintext before encryption and MUST be integrity protected by appearing 
- * only within the JWE Protected Header.
+ * Since the jose library (v5.x) removed zip header support for security reasons,
+ * we use a custom 'x-compression' header that clients can read before decryption:
+ * 
+ * - "brotli": Brotli compression algorithm
+ * - "gzip": Gzip compression algorithm  
+ * - "deflate": Deflate compression algorithm
+ * 
+ * This allows clients to detect compression before decryption while maintaining
+ * compatibility with the current jose library.
  */
 
 export default class TokenCrypto {
@@ -118,7 +122,7 @@ export default class TokenCrypto {
         alg: keyPair.alg || 'RSA-OAEP-256',
         enc: 'A256GCM' as const,
         kid: keyId,
-        zip: undefined as string | undefined,
+        'x-compression': undefined as string | undefined,
       };
 
       // Apply compression and set zip header if enabled
@@ -131,23 +135,9 @@ export default class TokenCrypto {
           compressionMethod = 'brotli'; // default when true
         }
         
-        // Set zip header according to RFC 7516 Section 4.1.3
-        // "DEF" is the standard value for DEFLATE compression
-        // For other algorithms, we use custom values that can be registered
-        switch (compressionMethod) {
-          case 'gzip':
-            // gzip uses DEFLATE internally, so we can use the standard "DEF" value
-            headers.zip = 'DEF';
-            break;
-          case 'brotli':
-            // Custom compression algorithm - could be registered in IANA registry
-            headers.zip = 'BR';
-            break;
-          default:
-            // For any other compression, use generic deflate
-            headers.zip = 'DEF';
-            break;
-        }
+        // Set custom compression header that jose library will accept
+        // This allows clients to detect compression before decryption
+        headers['x-compression'] = compressionMethod;
         
         const payloadString = JSON.stringify(payload);
         const payloadBuffer = Buffer.from(payloadString, 'utf8');
@@ -167,19 +157,19 @@ export default class TokenCrypto {
               _compression: compressionMethod === 'brotli' ? 'br' : compressionMethod,
             };
             this.log(
-              `Payload compressed (${compressionMethod}) with zip header "${headers.zip}":`,
+              `Payload compressed (${compressionMethod}) with x-compression header:`,
               payloadBuffer.length,
               '->',
               compressed.length,
               'bytes'
             );
           } else {
-            this.log('Compression skipped - no size benefit, removing zip header');
-            headers.zip = undefined; // Remove zip header if compression wasn't beneficial
+            this.log('Compression skipped - no size benefit, removing compression header');
+            headers['x-compression'] = undefined; // Remove compression header if not beneficial
           }
         } catch (compressionError) {
-          this.log('Compression failed, using uncompressed, removing zip header:', compressionError);
-          headers.zip = undefined; // Remove zip header if compression failed
+          this.log('Compression failed, using uncompressed, removing compression header:', compressionError);
+          headers['x-compression'] = undefined; // Remove compression header if compression failed
         }
       }
 
@@ -190,9 +180,9 @@ export default class TokenCrypto {
         kid: headers.kid,
       };
       
-      // Only include zip header if it's defined (RFC 7516 Section 4.1.3)
-      if (headers.zip) {
-        protectedHeader.zip = headers.zip;
+      // Include compression header if compression was applied
+      if (headers['x-compression']) {
+        protectedHeader['x-compression'] = headers['x-compression'];
       }
 
       const jwt = new jose.EncryptJWT(processedPayload)
@@ -247,14 +237,15 @@ export default class TokenCrypto {
       );
       this.log('Protected header:', protectedHeader);
 
-      // Check zip header and handle decompression according to RFC 7516 Section 4.1.3
-      if (protectedHeader.zip) {
-        this.log(`Found zip header indicating compression: ${protectedHeader.zip}`);
+      // Check compression header for compression info
+      if (protectedHeader['x-compression']) {
+        this.log(`Found compression header: ${protectedHeader['x-compression']}`);
         
-        // Validate zip header value according to RFC 7516
-        const validZipValues = ['DEF', 'BR']; // DEF is standard, BR is our custom brotli
-        if (!validZipValues.includes(protectedHeader.zip)) {
-          this.log(`Warning: Unknown zip header value: ${protectedHeader.zip}`);
+        // Validate compression header value
+        const compressionAlgorithm = protectedHeader['x-compression'] as string;
+        const validCompressionValues = ['brotli', 'gzip', 'deflate'];
+        if (!validCompressionValues.includes(compressionAlgorithm)) {
+          this.log(`Warning: Unknown compression algorithm: ${compressionAlgorithm}`);
         }
       }
       
@@ -266,11 +257,11 @@ export default class TokenCrypto {
           'base64'
         );
         
-        // Validate compression type matches zip header if present
-        if (protectedHeader.zip) {
-          const expectedZip = compressionType === 'br' ? 'BR' : 'DEF';
-          if (protectedHeader.zip !== expectedZip) {
-            this.log(`Warning: zip header "${protectedHeader.zip}" doesn't match compression type "${compressionType}"`);
+        // Validate compression type matches header if present
+        if (protectedHeader['x-compression']) {
+          const expectedCompression = compressionType === 'br' ? 'brotli' : compressionType;
+          if (protectedHeader['x-compression'] !== expectedCompression) {
+            this.log(`Warning: compression header "${protectedHeader['x-compression']}" doesn't match compression type "${compressionType}"`);
           }
         }
         
@@ -292,16 +283,16 @@ export default class TokenCrypto {
         >;
 
         this.log(
-          `Payload decompressed (zip: ${protectedHeader.zip || 'none'}):`,
+          `Payload decompressed (compression: ${protectedHeader['x-compression'] || 'none'}):`,
           compressedBuffer.length,
           '->',
           decompressed.length,
           'bytes'
         );
         return originalPayload;
-      } else if (protectedHeader.zip) {
-        // If zip header is present but no compression data found, log warning
-        this.log(`Warning: zip header "${protectedHeader.zip}" present but no compressed data found`);
+      } else if (protectedHeader['x-compression']) {
+        // If compression header is present but no compression data found, log warning
+        this.log(`Warning: compression header "${protectedHeader['x-compression']}" present but no compressed data found`);
       }
 
       return payload;
@@ -348,5 +339,47 @@ export default class TokenCrypto {
 
   public hasKey(keyId: string): boolean {
     return this._keys.get(keyId) !== undefined;
+  }
+
+  /**
+   * Check if a JWE token uses compression without decrypting it
+   * Clients can call this before decryption to detect compression
+   * 
+   * @param encryptedJWT The JWE token to inspect
+   * @returns Object with compression info or null if no compression
+   */
+  public static getCompressionInfo(encryptedJWT: string): {
+    algorithm: string;
+    isCompressed: boolean;
+  } | null {
+    try {
+      const protectedHeader = jose.decodeProtectedHeader(encryptedJWT);
+      
+      if (protectedHeader['x-compression']) {
+        return {
+          algorithm: protectedHeader['x-compression'] as string,
+          isCompressed: true
+        };
+      }
+      
+      return {
+        algorithm: 'none',
+        isCompressed: false
+      };
+    } catch (error) {
+      // If we can't decode the header, return null
+      return null;
+    }
+  }
+
+  /**
+   * Decode the JWE protected header without decrypting
+   * Useful for inspecting token metadata including compression info
+   * 
+   * @param encryptedJWT The JWE token to inspect
+   * @returns The protected header object
+   */
+  public static decodeProtectedHeader(encryptedJWT: string): any {
+    return jose.decodeProtectedHeader(encryptedJWT);
   }
 }

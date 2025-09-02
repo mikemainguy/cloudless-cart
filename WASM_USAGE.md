@@ -86,3 +86,39 @@ enableWasmButton.addEventListener('click', async () => {
 - **With brotli-wasm**: Additional ~200KB download (lazy-loaded only when enabled)
 
 The WASM module is never downloaded unless you explicitly call `enableBrotliWasm()`, ensuring your users don't pay for features they don't use.
+
+## Compression Detection for Clients
+
+Clients can detect if a JWE token uses compression **before decrypting it** using the custom `x-compression` header:
+
+```javascript
+import TokenCrypto from 'cloudless-cart';
+
+// Check compression without decrypting
+const compressionInfo = TokenCrypto.getCompressionInfo(encryptedToken);
+
+if (compressionInfo.isCompressed) {
+  console.log(`Token uses ${compressionInfo.algorithm} compression`);
+  // Client can prepare for decompression, log metrics, etc.
+} else {
+  console.log('Token is not compressed');
+}
+
+// Inspect full JWE header
+const header = TokenCrypto.decodeProtectedHeader(encryptedToken);
+console.log('Compression algorithm:', header['x-compression']); // 'brotli', 'gzip', or undefined
+```
+
+### Custom Compression Header
+
+Since the `jose` library (v5.x) removed RFC 7516 `zip` header support for security reasons, we use a custom `x-compression` header that:
+
+- ✅ **Works with current jose library** - No conflicts with reserved header names
+- ✅ **Readable before decryption** - Clients can detect compression immediately  
+- ✅ **Maintains compression benefits** - Full compression/decompression functionality
+- ✅ **Security compliant** - Follows jose library's security model
+
+**Header Values:**
+- `x-compression: "brotli"` - Brotli compression used
+- `x-compression: "gzip"` - Gzip compression used
+- No header present - No compression used
